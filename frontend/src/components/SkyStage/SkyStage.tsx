@@ -21,11 +21,17 @@ interface SkyStageProps {
   mode: ViewMode;
   stretch: StretchKind;
   invert: boolean;
+  gain: number;
+  /** Reference pass for Difference. */
+  refIndex: number;
   overlays: Overlays;
   /** Gaia predictions for this view. Null until the backend serves /gaia. */
   gaia: GaiaResult | null;
-  /** Show the leader-line label beside the frame (hidden when the object card covers it). */
+  /** Show the leader-line label beside the dome (hidden when a panel covers it). */
   showLabel: boolean;
+  /** Selected grid pixel, FITS orientation (row 0 = south). */
+  sel: [number, number] | null;
+  onSelect: (xy: [number, number] | null) => void;
   onRetry: () => void;
   onPreset: (p: Preset) => void;
 }
@@ -95,7 +101,7 @@ function useBox<T extends HTMLElement>() {
   return [ref, box] as const;
 }
 
-/** The eyepiece: frame, viewfinder ticks, compass, RA/Dec grid across the sky, and the target label. */
+/** The dome: circular frame, position-angle ring, RA/Dec grid across the sky, and the target label. */
 function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: ReactNode }) {
   const { view, ra, dec, index, mode } = props;
   const [frameRef, box] = useBox<HTMLDivElement>();
@@ -116,9 +122,8 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
     [box, ra, dec, fovDeg, props.overlays.grid],
   );
 
-  const ticks = Math.max(1, Math.round(fovArcmin));
   // Room between the frame and the tool rail on the right (rail 52px + gutters).
-  const labelRoom = box ? box.vw - (box.left + box.side) - 64 - 84 : 0;
+  const labelRoom = box ? box.vw - (box.left + box.side / 2 + (box.side / 2 + 36) * 0.7071 + 60) - 84 : 0;
   const showLabel = props.showLabel && labelRoom > 160 && box !== null;
 
   return (
@@ -128,7 +133,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           <defs>
             <mask id="frame-hole">
               <rect width={box.vw} height={box.vh} fill="white" />
-              <rect x={box.left - 1} y={box.top - 1} width={box.side + 2} height={box.side + 2} fill="black" />
+              <circle cx={box.left + box.side / 2} cy={box.top + box.side / 2} r={box.side / 2 + 1} fill="black" />
             </mask>
           </defs>
           <g mask="url(#frame-hole)">
@@ -137,16 +142,16 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
             ))}
           </g>
           {outer.decLabels.map((l) => (
-            <text key={l.text} x={box.left - 18} y={l.y} className={`${s.gridLabel} mono`} textAnchor="end" dominantBaseline="middle">
+            <text key={l.text} x={box.left - 46} y={l.y} className={`${s.gridLabel} mono`} textAnchor="end" dominantBaseline="middle">
               {l.text}
             </text>
           ))}
           {outer.raLabels.map((l) => (
-            <text key={l.text} x={l.x} y={box.top + box.side + 26} className={`${s.gridLabel} mono`} textAnchor="middle">
+            <text key={l.text} x={l.x} y={box.top + box.side + 54} className={`${s.gridLabel} mono`} textAnchor="middle">
               {l.text}
             </text>
           ))}
-          <Viewfinder left={box.left} top={box.top} side={box.side} ticks={ticks} />
+          <DomeRing left={box.left} top={box.top} side={box.side} />
           {showLabel && <Leader left={box.left} top={box.top} side={box.side} />}
         </svg>
       )}
@@ -168,13 +173,26 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           ) : m && m.epochs.length === 1 ? (
             <span>ONE PASS SO FAR · NOTHING TO COMPARE YET</span>
           ) : (
-            <Compass />
+            <span className={s.hintText}>CLICK TO MEASURE</span>
           )}
         </div>
-        <div ref={frameRef} className={s.frame}>
+        <div
+          ref={frameRef}
+          className={s.frame}
+          data-tour="dome"
+          onClick={(e) => {
+            if (!view) return;
+            const r = e.currentTarget.getBoundingClientRect();
+            const u = (e.clientX - r.left) / r.width;
+            const v = (e.clientY - r.top) / r.height;
+            if ((u - 0.5) ** 2 + (v - 0.5) ** 2 > 0.25) return; // outside the dome
+            const { nx, ny } = view.manifest.grid;
+            props.onSelect([Math.min(nx - 1, Math.floor(u * nx)), Math.min(ny - 1, ny - 1 - Math.floor(v * ny))]);
+          }}
+        >
           {view ? (
             <>
-              <FrameCanvas view={view} index={index} mode={mode} stretch={props.stretch} invert={props.invert} />
+              <FrameCanvas view={view} index={index} mode={mode} stretch={props.stretch} invert={props.invert} gain={props.gain} refIndex={props.refIndex} />
               <OverlayLayer
                 nx={view.manifest.grid.nx}
                 ny={view.manifest.grid.ny}
@@ -190,6 +208,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
                 </svg>
               )}
               <Crosshair />
+              {props.sel && <SelectionMarker sel={props.sel} nx={view.manifest.grid.nx} ny={view.manifest.grid.ny} />}
             </>
           ) : (
             props.children
@@ -200,8 +219,8 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
 
       {showLabel && box && (
         <TargetLabel
-          left={box.left + box.side + 64}
-          top={box.top + 34}
+          left={box.left + box.side / 2 + (box.side / 2 + 36) * 0.7071 + 60}
+          top={box.top + box.side / 2 - (box.side / 2 + 36) * 0.7071 - 20}
           maxWidth={Math.min(280, labelRoom)}
           name={props.target?.name ?? "Custom position"}
           ra={ra}
@@ -214,38 +233,76 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
   );
 }
 
-function Viewfinder({ left, top, side, ticks }: { left: number; top: number; side: number; ticks: number }) {
-  const g = 10; // gap between frame and brackets
-  const arm = Math.min(28, side / 8);
-  const L = left - g;
-  const T = top - g;
-  const R = left + side + g;
-  const B = top + side + g;
-  const step = side / ticks;
-  const tickPath = Array.from({ length: ticks + 1 }, (_, i) => {
-    const p = i * step;
-    const len = i % 5 === 0 ? 6 : 3;
-    return `M${left + p},${top - 1}v${-len}M${left + p},${top + side + 1}v${len}M${left - 1},${top + p}h${-len}M${left + side + 1},${top + p}h${len}`;
+/** Planetarium rim: an atmosphere glow, a position-angle ring with ticks every 5°, and N/E/S/W (east left). */
+function DomeRing({ left, top, side }: { left: number; top: number; side: number }) {
+  const cx = left + side / 2;
+  const cy = top + side / 2;
+  const r = side / 2;
+  const ring = r + 10;
+  const ticks = Array.from({ length: 72 }, (_, i) => {
+    const pa = i * 5; // degrees east of north
+    const a = (pa * Math.PI) / 180;
+    const len = pa % 30 === 0 ? 8 : 4;
+    // North up, east left: screen angle measured from up, counter-clockwise.
+    const sx = Math.sin(a);
+    const sy = Math.cos(a);
+    return `M${cx - sx * ring},${cy - sy * ring}L${cx - sx * (ring + len)},${cy - sy * (ring + len)}`;
   }).join("");
+  const letters: [string, number][] = [
+    ["N", 0],
+    ["E", 90],
+    ["S", 180],
+    ["W", 270],
+  ];
   return (
     <g>
-      <path d={tickPath} className={s.ticks} />
-      <path
-        d={`M${L},${T + arm}V${T}H${L + arm}M${R - arm},${T}H${R}V${T + arm}M${R},${B - arm}V${B}H${R - arm}M${L + arm},${B}H${L}V${B - arm}`}
-        className={s.brackets}
-      />
+      <defs>
+        <radialGradient id="atmo" cx={cx} cy={cy} r={r + 70} gradientUnits="userSpaceOnUse">
+          <stop offset={r / (r + 70)} stopColor="var(--sky-band)" stopOpacity="0.28" />
+          <stop offset="1" stopColor="var(--sky-band)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx={cx} cy={cy} r={r + 70} fill="url(#atmo)" />
+      <circle cx={cx} cy={cy} r={ring} className={s.ringLine} />
+      <path d={ticks} className={s.ticks} />
+      {letters.map(([t, pa]) => {
+        const a = (pa * Math.PI) / 180;
+        return (
+          <text
+            key={t}
+            x={cx - Math.sin(a) * (ring + 22)}
+            y={cy - Math.cos(a) * (ring + 22)}
+            className={s.cardinal}
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
+            {t}
+          </text>
+        );
+      })}
     </g>
+  );
+}
+
+function SelectionMarker({ sel, nx, ny }: { sel: [number, number]; nx: number; ny: number }) {
+  const x = sel[0] + 0.5;
+  const y = ny - sel[1] - 0.5;
+  return (
+    <svg className={s.overlay} viewBox={`0 0 ${nx} ${ny}`} aria-hidden="true">
+      <circle cx={x} cy={y} r={1.8} fill="none" stroke="var(--accent)" strokeWidth={0.25} />
+      <path d={`M${x - 3},${y}h1.2M${x + 1.8},${y}h1.2M${x},${y - 3}v1.2M${x},${y + 1.8}v1.2`} stroke="var(--accent)" strokeWidth={0.25} />
+    </svg>
   );
 }
 
 function Leader({ left, top, side }: { left: number; top: number; side: number }) {
   const cx = left + side / 2;
   const cy = top + side / 2;
-  const r = side * 0.07;
-  const sx = cx + r * 0.72;
-  const sy = cy - r * 0.72;
-  const ex = left + side + 40;
-  const ey = top + 48;
+  const r = side / 2 + 36;
+  const sx = cx + r * 0.7071;
+  const sy = cy - r * 0.7071;
+  const ex = sx + 34;
+  const ey = sy - 34;
   return (
     <g className={s.leader}>
       <path d={`M${sx},${sy}L${ex},${ey}H${ex + 18}`} />
@@ -280,18 +337,6 @@ function ScaleBar({ side, fovArcmin }: { side: number; fovArcmin: number }) {
   return (
     <span className={s.scale}>
       <span className={s.scaleBar} style={{ width: px }} />1′
-    </span>
-  );
-}
-
-function Compass() {
-  return (
-    <span className={s.compass} aria-label="North is up, east is left">
-      <svg width="40" height="28" viewBox="0 0 40 28" aria-hidden="true">
-        <path d="M30 24V6M30 6l-3 4M30 6l3 4M30 24H12M12 24l4-3M12 24l4 3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-      </svg>
-      <span className={s.compassN}>N</span>
-      <span className={s.compassE}>E</span>
     </span>
   );
 }
@@ -338,9 +383,11 @@ interface CanvasProps {
   mode: ViewMode;
   stretch: StretchKind;
   invert: boolean;
+  gain: number;
+  refIndex: number;
 }
 
-function FrameCanvas({ view, index, mode, stretch, invert }: CanvasProps) {
+function FrameCanvas({ view, index, mode, stretch, invert, gain, refIndex }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const { manifest: m, images } = view;
   const { nx, ny } = m.grid;
@@ -350,16 +397,17 @@ function FrameCanvas({ view, index, mode, stretch, invert }: CanvasProps) {
     if (!ctx) return;
     const out = ctx.createImageData(nx, ny);
     const cur = images[index] ?? images[0];
-    if (mode === "diff" && images.length > 1 && index > 0) {
-      renderDifference(out.data, images[0], cur, m.epochs[index].phot_scale / m.epochs[0].phot_scale, nx, ny, {
+    const r = Math.min(refIndex, images.length - 1);
+    if (mode === "diff" && images.length > 1 && index !== r) {
+      renderDifference(out.data, images[r], cur, m.epochs[index].phot_scale / m.epochs[r].phot_scale, nx, ny, {
         neg: tokenRgb("--text-1"),
         pos: tokenRgb("--mover"),
       });
     } else {
-      renderEpoch(out.data, cur, nx, ny, m.stretch, stretch, invert);
+      renderEpoch(out.data, cur, nx, ny, m.stretch, stretch, invert, gain);
     }
     ctx.putImageData(out, 0, 0);
-  }, [images, index, mode, stretch, invert, nx, ny, m]);
+  }, [images, index, mode, stretch, invert, gain, refIndex, nx, ny, m]);
 
   const e = m.epochs[index] ?? m.epochs[0];
   return (
@@ -369,7 +417,7 @@ function FrameCanvas({ view, index, mode, stretch, invert }: CanvasProps) {
       width={nx}
       height={ny}
       role="img"
-      aria-label={`SPHEREx image, epoch ${e.i + 1} of ${m.epochs.length}, ${e.label}${mode === "diff" ? ", difference from epoch 1" : ""}`}
+      aria-label={`SPHEREx image, epoch ${e.i + 1} of ${m.epochs.length}, ${e.label}${mode === "diff" ? `, difference from pass ${Math.min(refIndex, m.epochs.length - 1) + 1}` : ""}`}
     />
   );
 }

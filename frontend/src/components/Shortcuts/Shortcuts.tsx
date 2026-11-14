@@ -6,7 +6,8 @@ const KEYS: [string, string][] = [
   ["← →", "Previous or next pass"],
   ["B", "Blink first and last"],
   ["D", "Difference"],
-  ["C", "Customize"],
+  ["C", "Show or hide Customize"],
+  ["I", "Details and measurements"],
   ["Esc", "Close panel"],
   ["?", "These shortcuts"],
 ];

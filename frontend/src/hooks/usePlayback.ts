@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ViewMode } from "../lib/url";
 
-/** Epoch order for a mode. Blink alternates first and last; difference skips the reference epoch 0. */
-export function sequenceFor(mode: ViewMode, count: number): number[] {
+/** Epoch order for a mode. Blink alternates the reference and the last pass; difference skips the reference. */
+export function sequenceFor(mode: ViewMode, count: number, ref = 0): number[] {
   if (count <= 0) return [];
-  if (mode === "blink") return count > 1 ? [0, count - 1] : [0];
-  if (mode === "diff") return count > 1 ? Array.from({ length: count - 1 }, (_, i) => i + 1) : [0];
+  const r = Math.min(Math.max(ref, 0), count - 1);
+  if (mode === "blink") return count > 1 ? [r, r === count - 1 ? 0 : count - 1] : [0];
+  if (mode === "diff") return count > 1 ? Array.from({ length: count }, (_, i) => i).filter((i) => i !== r) : [0];
   return Array.from({ length: count }, (_, i) => i);
 }
 
@@ -21,8 +22,8 @@ interface State {
  * Flipbook clock. `resetKey` identifies the loaded view; a new key starts again at `initial`.
  * `loops` counts completed passes through the sequence across the session (the step guide uses it).
  */
-export function usePlayback(resetKey: string, count: number, mode: ViewMode, speed: number, initial: number) {
-  const seq = sequenceFor(mode, count);
+export function usePlayback(resetKey: string, count: number, mode: ViewMode, speed: number, initial: number, ref = 0) {
+  const seq = sequenceFor(mode, count, ref);
   const fresh = (): State => ({
     key: resetKey,
     index: Math.min(Math.max(initial, 0), Math.max(count - 1, 0)),
@@ -59,7 +60,7 @@ export function usePlayback(resetKey: string, count: number, mode: ViewMode, spe
       }),
     // seq is derived from mode and count.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [update, mode, count],
+    [update, mode, count, ref],
   );
 
   useEffect(() => {

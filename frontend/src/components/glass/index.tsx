@@ -119,3 +119,23 @@ export function Tabs<T extends string>({ label, value, tabs, onChange }: TabsPro
 }
 
 export { Icon };
+
+export function Switch({ label, pressed, disabled, hint, onToggle }: { label: string; pressed: boolean; disabled?: boolean; hint?: string; onToggle: () => void }) {
+  const id = `sw-${label.replace(/\W+/g, "-").toLowerCase()}`;
+  return (
+    <div className={s.switchRow}>
+      <span id={id}>{label}</span>
+      <span className={s.switchHit}>
+        <button
+          type="button"
+          className={s.switch}
+          aria-pressed={pressed && !disabled}
+          aria-labelledby={id}
+          disabled={disabled}
+          title={disabled ? (hint ?? NOT_AVAILABLE) : hint}
+          onClick={onToggle}
+        />
+      </span>
+    </div>
+  );
+}

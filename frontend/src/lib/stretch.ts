@@ -20,9 +20,9 @@ export function tokenRgb(name: string): Rgb {
 }
 
 /** docs/PLAN.md 5.6: one locked (vmin, vmax, beta) for every epoch. */
-export function stretchValue(x: number, s: Manifest["stretch"], kind: StretchKind): number {
+export function stretchValue(x: number, s: Manifest["stretch"], kind: StretchKind, gain = 1): number {
   if (!Number.isFinite(x)) return 0;
-  const span = s.vmax - s.vmin;
+  const span = (s.vmax - s.vmin) * gain;
   let y: number;
   if (kind === "linear") {
     y = (x - s.vmin) / span;
@@ -41,11 +41,12 @@ export function renderEpoch(
   s: Manifest["stretch"],
   kind: StretchKind,
   invert: boolean,
+  gain = 1,
 ): void {
   for (let y = 0; y < ny; y++) {
     const src = (ny - 1 - y) * nx;
     for (let x = 0; x < nx; x++) {
-      let v = stretchValue(img[src + x], s, kind);
+      let v = stretchValue(img[src + x], s, kind, gain);
       if (invert) v = 1 - v;
       const g = Math.round(v * 255);
       const o = (y * nx + x) * 4;

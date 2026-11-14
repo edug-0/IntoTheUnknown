@@ -38,11 +38,18 @@
   stroke-width: 1;
 }
 
-.brackets {
+.ringLine {
   fill: none;
-  stroke: var(--text-1);
-  stroke-opacity: 0.75;
-  stroke-width: 1.5;
+  stroke: var(--text-2);
+  stroke-opacity: 0.5;
+  stroke-width: 1;
+}
+
+.cardinal {
+  fill: var(--text-1);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
 }
 
 .leader {
@@ -58,12 +65,13 @@
 
 /* Frame column: label row, square image, grid-label row. */
 .column {
-  --row: 32px;
-  --side: min(calc(100cqw - 150px), calc(100cqh - var(--row) * 2 - 12px));
+  --row: 40px;
+  --side: min(calc(100cqw - 170px), calc(100cqh - var(--row) * 2 - 40px));
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-rows: var(--row) auto var(--row);
+  grid-template-columns: minmax(0, 1fr);
   width: var(--side);
 }
 
@@ -76,7 +84,8 @@
   letter-spacing: 0.06em;
   color: var(--text-2);
   white-space: nowrap;
-  padding-bottom: 12px;
+  overflow: hidden;
+  padding-bottom: 20px;
 }
 
 .frame {
@@ -84,7 +93,10 @@
   width: 100%;
   aspect-ratio: 1;
   background: var(--space-1);
+  border-radius: 50%;
   overflow: hidden;
+  cursor: crosshair;
+  box-shadow: 0 0 0 1px var(--glass-border);
 }
 
 .canvas,
@@ -114,31 +126,6 @@
   height: 6px;
   border: 1px solid var(--text-2);
   border-top: 0;
-}
-
-.compass {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 28px;
-  color: var(--text-2);
-}
-
-.compassN,
-.compassE {
-  position: absolute;
-  font-size: 10px;
-  color: var(--text-1);
-}
-
-.compassN {
-  right: 6px;
-  top: -10px;
-}
-
-.compassE {
-  left: -10px;
-  bottom: -1px;
 }
 
 .legend {
@@ -304,8 +291,12 @@
 }
 
 @media (max-width: 768px) {
+  .hintText {
+    display: none;
+  }
+
   .column {
-    --side: min(calc(100cqw - 70px), calc(100cqh - var(--row) * 2 - 8px));
+    --side: min(calc(100cqw - 72px), calc(100cqh - var(--row) * 2 - 40px));
   }
 
   .gridLabel {

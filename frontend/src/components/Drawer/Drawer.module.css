@@ -2,7 +2,7 @@
   position: absolute;
   z-index: 30;
   top: var(--chrome-top);
-  right: var(--gutter);
+  right: calc(var(--gutter) * 2 + 52px);
   bottom: var(--chrome-bottom);
   width: var(--drawer-w);
   display: flex;
@@ -22,8 +22,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 4px 0 8px;
+  padding: 4px 4px 0 4px;
   border-bottom: 1px solid var(--glass-border);
+}
+
+.head [role="tablist"] {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.head [role="tab"] {
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .body {
@@ -37,99 +48,29 @@
 
 .section {
   display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  gap: 10px;
 }
 
-.section legend,
 .sectionTitle {
-  padding: 0;
-  margin: 0 0 4px;
+  margin: 0;
+  letter-spacing: 0.3em;
 }
 
-.row {
-  display: grid;
-  gap: 6px;
-}
-
-.rowInline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: var(--target-min);
-}
-
-.select {
-  min-height: var(--target-min);
-  padding: 0 14px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
-  background: var(--space-1);
-  color: var(--text-1);
-}
-
-/* Toggle switch: a real button with aria-pressed. */
-.switch {
-  position: relative;
-  width: 44px;
-  height: 26px;
-  flex: none;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--glass-border);
-  background: var(--space-1);
-  transition: background-color var(--dur) var(--ease);
-}
-
-.switch::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--text-2);
-  transition:
-    translate var(--dur) var(--ease),
-    background-color var(--dur) var(--ease);
-}
-
-.switch[aria-pressed="true"] {
-  background: var(--accent-wash);
-  border-color: var(--accent);
-}
-
-.switch[aria-pressed="true"]::after {
-  translate: 18px 0;
-  background: var(--accent);
-}
-
-.switch:disabled {
-  opacity: 0.45;
-}
-
-/* Keep the hit area at 44px while the switch draws smaller. */
-.switchHit {
-  display: inline-grid;
-  place-items: center;
-  min-width: var(--target-min);
-  min-height: var(--target-min);
+.name {
+  margin: 0;
+  font-size: 26px;
 }
 
 .hint {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-2);
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-2);
 }
 
 .kv {
@@ -139,6 +80,10 @@
   margin: 0;
 }
 
+.row {
+  display: contents;
+}
+
 .kv dt {
   align-self: center;
 }
@@ -146,6 +91,17 @@
 .kv dd {
   margin: 0;
   text-align: right;
+  font-size: 12px;
+}
+
+.flagCount {
+  color: var(--flag);
+}
+
+.flagList {
+  display: block;
+  color: var(--text-2);
+  font-size: 10px;
 }
 
 .slot {
@@ -160,8 +116,55 @@
   padding: 12px;
 }
 
-.flagCount {
-  color: var(--flag);
+.loading {
+  animation: pulse 1.6s var(--ease) infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.5;
+  }
+}
+
+.tableWrap {
+  max-height: 52dvh;
+  overflow: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-chip);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--space-1);
+  color: var(--text-2);
+  font-weight: 500;
+  text-align: left;
+  padding: 6px 10px;
+}
+
+.table td {
+  padding: 5px 10px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.table tbody tr {
+  cursor: pointer;
+}
+
+.table tbody tr:hover {
+  background: var(--hover-wash);
+}
+
+.table tr[data-active="true"] td {
+  color: var(--text-1);
+  background: var(--accent-wash);
 }
 
 @media (max-width: 768px) {
@@ -171,7 +174,7 @@
     right: 0;
     bottom: 0;
     width: auto;
-    height: min(55dvh, 460px);
+    height: min(60dvh, 480px);
     border-radius: var(--radius-panel) var(--radius-panel) 0 0;
     animation-name: sheet-in;
   }

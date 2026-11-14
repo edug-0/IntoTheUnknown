@@ -1,7 +1,8 @@
 import { BAND_OPTIONS, FOV_OPTIONS, type Band, type FovArcmin } from "../types";
 
 export type ViewMode = "all" | "blink" | "diff" | "inspect";
-export type Panel = "customize" | "details";
+/** Tabs of the right-hand details drawer (null = closed). */
+export type Panel = "pass" | "colours" | "brightness" | "files" | "sky";
 export type StretchKind = "asinh" | "linear";
 
 export interface Overlays {
@@ -25,6 +26,12 @@ export interface ViewState {
   speed: number;
   stretch: StretchKind;
   invert: boolean;
+  /** Multiplies the shared stretch's upper limit (lower = brighter). */
+  gain: number;
+  /** Reference epoch for Difference and Blink (zero-based). */
+  ref: number;
+  /** Selected grid pixel for measurements, FITS orientation (row 0 = south). */
+  sel: [number, number] | null;
   overlays: Overlays;
 }
 
@@ -37,12 +44,17 @@ export const DEFAULTS: Omit<ViewState, "ra" | "dec" | "target"> = {
   speed: 2,
   stretch: "asinh",
   invert: false,
+  gain: 1,
+  ref: 0,
+  sel: null,
   overlays: { gaia: true, flags: false, grid: false },
 };
 
+export const GAINS = [0.25, 0.5, 1, 2] as const;
+
 export const SPEEDS = [0.5, 1, 2, 4, 8] as const;
 const MODES: ViewMode[] = ["all", "blink", "diff", "inspect"];
-const PANELS: Panel[] = ["customize", "details"];
+const PANELS: Panel[] = ["pass", "colours", "brightness", "files", "sky"];
 
 function num(v: string | null): number | null {
   if (v === null || v.trim() === "") return null;
@@ -61,6 +73,11 @@ export function parseUrl(search: string): ViewState {
   const speed = num(p.get("speed"));
   const epoch = num(p.get("epoch"));
   const ov = p.get("ov");
+  const gain = num(p.get("gain"));
+  const ref = num(p.get("ref"));
+  const selRaw = (p.get("sel") ?? "").split(",").map(Number);
+  const sel: [number, number] | null =
+    selRaw.length === 2 && selRaw.every((v) => Number.isInteger(v) && v >= 0) ? [selRaw[0], selRaw[1]] : null;
   const hasCoords = ra !== null && dec !== null && ra >= 0 && ra < 360 && dec >= -90 && dec <= 90;
   return {
     ra: hasCoords ? ra : null,
@@ -74,6 +91,9 @@ export function parseUrl(search: string): ViewState {
     speed: SPEEDS.includes(speed as (typeof SPEEDS)[number]) ? (speed as number) : DEFAULTS.speed,
     stretch: p.get("stretch") === "linear" ? "linear" : "asinh",
     invert: p.get("invert") === "1",
+    gain: GAINS.includes(gain as (typeof GAINS)[number]) ? (gain as number) : DEFAULTS.gain,
+    ref: ref !== null && ref >= 1 ? Math.floor(ref) - 1 : 0,
+    sel,
     overlays:
       ov === null
         ? DEFAULTS.overlays
@@ -95,6 +115,9 @@ export function toSearch(s: ViewState): string {
   set("speed", s.speed === DEFAULTS.speed ? null : String(s.speed));
   set("stretch", s.stretch === DEFAULTS.stretch ? null : s.stretch);
   set("invert", s.invert ? "1" : null);
+  set("gain", s.gain === DEFAULTS.gain ? null : String(s.gain));
+  set("ref", s.ref === 0 ? null : String(s.ref + 1));
+  set("sel", s.sel ? s.sel.join(",") : null);
   const ov = (s.overlays.gaia ? "g" : "") + (s.overlays.flags ? "f" : "") + (s.overlays.grid ? "r" : "");
   const ovDefault = (DEFAULTS.overlays.gaia ? "g" : "") + (DEFAULTS.overlays.flags ? "f" : "") + (DEFAULTS.overlays.grid ? "r" : "");
   set("ov", ov === ovDefault ? null : ov || "-");
