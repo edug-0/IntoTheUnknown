@@ -1255,9 +1255,13 @@ function updatePhot(){
   const f=S.frames[S.cur];
   if(S.phot.track){ [S.phot.ra,S.phot.dec]=propagate(S.target, f? f.year:2026); }
   S.photPts=pts;
+  // Very bright stars saturate SPHEREx: the pipeline blanks their central pixels, so they can't be measured.
+  const blankCore=e=>{ let [gx,gy]=S.phot.track? skyToGrid(...propagate(S.target,e.year)) : skyToGrid(S.phot.ra,S.phot.dec), n=0;
+    for(let j=Math.round(gy)-1;j<=Math.round(gy)+1;j++) for(let i=Math.round(gx)-1;i<=Math.round(gx)+1;i++){ const v=e.data[j*S.N+i]; if(!Number.isFinite(v)) n++; } return n>=3; };
+  S.photSaturated = !S.exps[0]?.sim && pts.length>0 && pts.filter(p=>!Number.isFinite(p.f)).length > pts.length/2 && S.exps.filter(blankCore).length > S.exps.length/2;
   const good=pts.filter(p=>Number.isFinite(p.f));
   $("photInfo").innerHTML = `<span>Position</span><span>${fmtRA(S.phot.ra)} ${fmtDec(S.phot.dec)}</span><span>Mode</span><span>${S.phot.track?"follows the target's predicted motion":"fixed sky position (clicked)"}</span><span>Points</span><span>${good.length} of ${pts.length} exposures measured</span><span>Aperture</span><span>r = ${CONFIG.APERTURE_PX} px (${(CONFIG.APERTURE_PX*CONFIG.PIX_ARCSEC).toFixed(0)}″), sky ${CONFIG.ANNULUS_PX.join("–")} px</span>`;
-  drawSpectrum(); drawLC(); drawOverlay();
+  drawSpectrum(); drawLC(); drawOverlay(); setCaption();
 }
 const SEASON_COLORS=["#7fd8ff","#ffd27a","#6ee7a8","#ff8fd8","#b69cff","#ff9a5c","#e6e86b","#9ad0ff"];
 const DET_COLORS=["#8fa8ff","#7fd8ff","#6ee7a8","#e6e86b","#ffd27a","#ff7b7b"];
@@ -1276,13 +1280,19 @@ function plotFrame(cv, xr, yr, xlab, ylab, logY){
   ctx.fillText(ylab, m.l+6*dpr, m.t+12*dpr);
   return {ctx,X,Y,dpr};
 }
+function emptyPlotMsg(cv){
+  if(!S.photSaturated) return;
+  const dpr=devicePixelRatio, ctx=cv.getContext("2d"), W=cv.width, H=cv.height; ctx.fillStyle="#cdd5f2"; ctx.textAlign="center"; ctx.font=`${13*dpr}px system-ui,sans-serif`;
+  ["Too bright to measure: this star saturates SPHEREx's detectors,","so NASA's pipeline blanks its centre in every image.","You can still watch it in the dome. Switch Advanced → Simulated to see its brightness change."]
+    .forEach((l,i)=>ctx.fillText(l, W/2, H/2+(i-1)*20*dpr)); ctx.textAlign="start";
+}
 function niceTicks(a,b,n){ const step=Math.pow(10,Math.floor(Math.log10((b-a)/n))); const s=[1,2,5,10].map(k=>k*step).find(k=>(b-a)/k<=n)||step*10; const out=[]; for(let v=Math.ceil(a/s)*s; v<=b+1e-9; v+=s) out.push(v); return out; }
 function drawSpectrum(){
   const pts=(S.photPts||[]).filter(p=>Number.isFinite(p.f)); const cv=$("specPlot"); const logY=$("specLog").checked;
   // in simulated mode, overlay the input model (time-averaged) so the measurement can be checked against the truth
   const showModel = S.src==="sim" && S.phot?.track && S.target;
   const model = showModel? Array.from({length:426},(_,i)=>{ const l=0.75+i*0.01; return [l, modelFlux(S.target.kind,l)]; }) : [];
-  const vals=pts.map(p=>p.f).filter(v=> !logY || v>0); if(!vals.length){ $("specLegend").innerHTML=""; plotFrame(cv,[0.7,5.05],[1,10],"wavelength (µm)","flux (µJy)",logY); return; }
+  const vals=pts.map(p=>p.f).filter(v=> !logY || v>0); if(!vals.length){ $("specLegend").innerHTML=""; plotFrame(cv,[0.7,5.05],[1,10],"wavelength (µm)","flux (µJy)",logY); emptyPlotMsg(cv); return; }
   let lo=Math.min(...vals), hi=Math.max(...vals); if(logY){ lo=Math.max(lo, hi/3e3); lo/=1.5; hi*=1.5; } else { const pad=(hi-lo)*0.1||1; lo-=pad; hi+=pad; }
   const {ctx,X,Y,dpr}=plotFrame(cv,[0.7,5.05],[lo,hi],"wavelength (µm)","flux (µJy)",logY);
   // detector bands along the bottom
@@ -1298,7 +1308,7 @@ function drawSpectrum(){
 function drawLC(){
   const pts=(S.photPts||[]).filter(p=>Number.isFinite(p.f)); const cv=$("lcPlot");
   const legend=$("lcLegend"); legend.innerHTML="";
-  if(!pts.length){ plotFrame(cv,[2025.3,2027],[0,2],"year","relative flux",false); return; }
+  if(!pts.length){ plotFrame(cv,[2025.3,2027],[0,2],"year","relative flux",false); emptyPlotMsg(cv); return; }
   const rel=[];
   for(let d=1; d<=6; d++){ const ps=pts.filter(p=>p.det===d); const m=medianOf(ps.map(p=>p.f)); if(!(m>0)) continue;
     for(const p of ps) rel.push({...p, r:p.f/m}); }
@@ -1344,7 +1354,8 @@ function setCaption(){
   const how = S.disp==="diff"? "You're seeing <b>what changed</b>: black = no change, orange = brighter than the comparison frame, blue = fainter. Something that moved leaves blue where it was and orange where it is now."
     : S.disp==="rgb"? "You're seeing <b>colours</b>: blue = shortest infrared (0.75–1.6 µm), green = middle (1.6–3.8 µm), red = longest (3.8–5 µm)."
     : "You're seeing the <b>picture</b>: SPHEREx's infrared view on each date. Like looking up at the sky: north is at the top, east on the left.";
-  $("caption").innerHTML = t? `${p? tips[p.kind] : `<b>${esc(t.name||"Your target")}.</b> The gold cross-hair marks where it should be on each date.`}<span class="how">${how}</span>`
+  const sat = S.photSaturated? ` <i>It is so bright that it saturates SPHEREx's detectors: NASA blanks its centre in every image, so its brightness can't be measured from the real data. Switch Advanced → Simulated to see the measurements.</i>` : "";
+  $("caption").innerHTML = t? `${p? tips[p.kind] : `<b>${esc(t.name||"Your target")}.</b> The gold cross-hair marks where it should be on each date.`}${sat}<span class="how">${how}</span>`
     : `Pick one of the objects above to start. New here? Take the <a href="#" id="capTour">30-second tour</a>.`;
   $("capTour")?.addEventListener("click", e=>{ e.preventDefault(); startTour(); });
 }

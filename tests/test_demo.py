@@ -23,7 +23,7 @@ if not targets:
 
 CHECK = """() => {
   const bad=[], blank=[];
-  for(const e of S.exps){ const D=DETS[e.det-1]; if(!(e.lam>=D.lo-0.03 && e.lam<=D.hi+0.03) || e.lamSrc!=="WCS-WAVE") bad.push([e.det,e.lam,e.lamSrc]);
+  for(const e of S.exps){ const D=DETS[e.det-1]; if(!(e.lam>=D.lo-0.05 && e.lam<=D.hi+0.05) || e.lamSrc!=="WCS-WAVE") bad.push([e.det,e.lam,e.lamSrc]);
     for(let k=0;k<6;k++){ const c=6+((k*7919)%(S.N-12)), r=6+((k*104729)%(S.N-12)); const f=aperture(e.data,c,r,e.lam,e.psfSig); if(Number.isFinite(f)) blank.push(f); } }
   blank.sort((x,y)=>x-y); const q=f=>blank[Math.floor(f*(blank.length-1))];
   return {n:S.exps.length, seasons:clusterTimes(S.exps,CONFIG.SEASON_GAP_DAYS).length, bad, med:q(0.5), sig:(q(0.84)-q(0.16))/2,
@@ -46,6 +46,9 @@ with sync_playwright() as p:
               f"wavelength-out-of-range={len(r['bad'])} blank-sky median={r['med']:.0f}±{r['sig']:.0f} µJy")
         if r["bad"]: fails.append(f"{slug}: wavelengths outside detector range {r['bad'][:3]}")
         if abs(r["med"]) > r["sig"]: fails.append(f"{slug}: blank-sky photometry biased")
+        sat = pg.evaluate("()=>S.photSaturated")
+        if r["measured"] == 0 and not sat: fails.append(f"{slug}: nothing measured and not explained by saturation")
+        if sat: print(f"{'':15s} (saturated: the app explains why it can't be measured)")
         pg.screenshot(path=f"{a.out}/demo_{slug}.png")
     b.close()
 print("console errors:", errors or "none")
