@@ -87,6 +87,7 @@ button:disabled {
   *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+    animation-delay: 0ms !important; /* a delayed 0 ms animation would hold its "from" state */
     animation-iteration-count: 1 !important;
   }
 }

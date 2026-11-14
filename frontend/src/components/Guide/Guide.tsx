@@ -20,6 +20,7 @@ const KEYS: [string, string][] = [
   ["D", "Difference"],
   ["C", "Show or hide Customize"],
   ["I", "Details and measurements"],
+  ["Arrows, Enter", "On the image: move the cursor, measure"],
   ["?", "This guide"],
   ["Esc", "Close panels"],
 ];
@@ -106,8 +107,8 @@ export function Guide({ onClose, onTour }: { onClose: () => void; onTour: () => 
             </dl>
             <h3>Measurements</h3>
             <dl className={s.kv}>
-              <dt>Colours</dt>
-              <dd>The brightness of the spot you clicked in every frame of this pass, by wavelength: its spectrum.</dd>
+              <dt>Spectrum</dt>
+              <dd>The brightness of the spot you clicked in every frame of this pass, by infrared wavelength.</dd>
               <dt>Brightness</dt>
               <dd>Whether it gets brighter or fainter between passes.</dd>
               <dt>Files</dt>

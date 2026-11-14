@@ -60,7 +60,7 @@ export const TOUR: TourStep[] = [
     target: "details",
     needs: "drawer",
     title: "Measure it",
-    text: "Click any star in the dome, then read its colours (spectrum) and its brightness over time. Files lists every SPHEREx image used, and Sky shows where this patch sits on the whole sky.",
+    text: "Click any star in the dome (or use the arrow keys and Enter), then read its spectrum and its brightness over time. Files lists every SPHEREx image used, and Sky shows where this patch sits on the whole sky.",
   },
   {
     target: "help",

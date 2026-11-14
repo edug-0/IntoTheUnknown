@@ -7,11 +7,16 @@ import s from "./Orrery.module.css";
 
 interface OrreryProps {
   targets: readonly Preset[];
-  /** Called after the fly-to animation (or at once under reduced motion). */
+  /** Called the moment a flight starts, so the starfield can begin its jump in the same instant. */
+  onFlightStart?: (p: Preset) => void;
+  /** Called part-way through the flight (or at once under reduced motion) to open the target. */
   onPick: (p: Preset) => void;
 }
 
-const FLY_MS = 950;
+/** One continuous flight: turn toward the target, then hand off to the dome while still moving. */
+const FLY_MS = 700;
+const COMMIT_AT = 0.78; // about 550 ms in
+const cinematic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const NEPTUNE_AU = 30.07;
 /** Distances are compressed so Mercury and Neptune fit on one screen. */
 const squash = (au: number) => Math.pow(au / NEPTUNE_AU, 0.42);
@@ -29,13 +34,13 @@ const rgba = (c: [number, number, number], a: number) => `rgba(${c[0]},${c[1]},$
  * Home view: a live holographic orrery. Planets sit at today's positions (approximate), SPHEREx rides with
  * Earth, and the five targets hang on a wireframe celestial sphere in their real directions. Drag to turn it.
  */
-export function Orrery({ targets, onPick }: OrreryProps) {
+export function Orrery({ targets, onPick, onFlightStart }: OrreryProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markerRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const clockRef = useRef<HTMLSpanElement>(null);
   const cam = useRef({ yaw: -0.6, pitch: 1.05, dist: 3.2, fade: 1 });
-  const fly = useRef<{ start: number; from: typeof cam.current; to: { yaw: number; pitch: number }; p: Preset } | null>(null);
+  const fly = useRef<{ start: number; from: typeof cam.current; to: { yaw: number; pitch: number }; p: Preset; k: number } | null>(null);
   const onPickRef = useRef(onPick);
   /** Pause the slow spin while a target is hovered or focused, so it holds still to be clicked. */
   const holdRef = useRef(false);
@@ -54,6 +59,8 @@ export function Orrery({ targets, onPick }: OrreryProps) {
     const sun = tokenRgb("--sun");
     const band = tokenRgb("--holo");
     const T = centuries(new Date());
+    // Lower resolution on small machines keeps the loop under a frame budget.
+    const dprCap = (navigator.hardwareConcurrency || 8) <= 4 ? 1.25 : 2;
 
     // Static geometry, built once.
     const orbits = PLANETS.map((p) => Array.from({ length: 129 }, (_, k) => scale(position(p, T, (k / 128) * Math.PI * 2))));
@@ -77,10 +84,12 @@ export function Orrery({ targets, onPick }: OrreryProps) {
 
     let w = 0;
     let h = 0;
+    let dirty = true;
     const resize = () => {
       const r = wrap.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(dprCap, window.devicePixelRatio || 1);
       w = r.width;
+      dirty = true;
       h = r.height;
       cv.width = Math.round(w * dpr);
       cv.height = Math.round(h * dpr);
@@ -127,44 +136,62 @@ export function Orrery({ targets, onPick }: OrreryProps) {
       if (f) {
         if (f.start < 0) f.start = now;
         const t = Math.min(1, (now - f.start) / FLY_MS);
-        const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+        const e = cinematic(t);
         c.yaw = f.from.yaw + (f.to.yaw - f.from.yaw) * e;
         c.pitch = f.from.pitch + (f.to.pitch - f.from.pitch) * e;
         c.dist = f.from.dist + (0.15 - f.from.dist) * e ** 1.6;
-        c.fade = 1 - e;
-        if (t >= 1) {
+        c.fade = 1 - e * 0.85;
+        if (t >= COMMIT_AT) {
           fly.current = null;
+          // The clicked ring becomes the shared element that grows into the dome.
+          const el = markerRefs.current[f.k];
+          if (el) el.style.setProperty("view-transition-name", "aperture");
           onPickRef.current(f.p);
           return; // the view takes over
         }
+        dirty = true;
       } else if (!reduce && !dragging && !holdRef.current) {
         c.yaw += dt * 0.05;
+        dirty = true;
       }
+      if (!dirty) {
+        raf = requestAnimationFrame(frame);
+        return; // still scene (reduced motion): draw only when something changed
+      }
+      dirty = false;
 
       ctx.clearRect(0, 0, w, h);
       ctx.globalAlpha = c.fade;
       // Celestial sphere: grid, galactic band, ecliptic.
       meridians.forEach((m) => line(m, c, holo, 0.14));
       parallels.forEach((p, k) => line(p, c, holo, k === 2 ? 0.3 : 0.14, k === 2 ? 1.2 : 1));
-      ctx.save();
-      ctx.shadowColor = rgba(band, 0.8);
-      ctx.shadowBlur = 18;
-      for (let k = 1; k < galaxy.length; k++) {
-        const a = project(galaxy[k - 1].p, c);
-        const b = project(galaxy[k].p, c);
-        if (a.depth < 0.05) continue;
-        ctx.strokeStyle = rgba(star, 0.16 * galaxy[k].w * (a.front ? 1 : 0.4));
-        ctx.lineWidth = 3 + 9 * galaxy[k].w;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
+      // Galactic band as stacked translucent strokes (no shadowBlur, which is slow in Firefox).
+      ctx.lineCap = "round";
+      for (const [widthK, alphaK, color] of [
+        [22, 0.035, band],
+        [11, 0.06, star],
+        [4, 0.1, star],
+      ] as const) {
+        for (let k = 1; k < galaxy.length; k++) {
+          const a = project(galaxy[k - 1].p, c);
+          const b = project(galaxy[k].p, c);
+          if (a.depth < 0.05) continue;
+          ctx.strokeStyle = rgba(color, alphaK * (0.4 + galaxy[k].w) * (a.front ? 1 : 0.45));
+          ctx.lineWidth = widthK * (0.5 + galaxy[k].w * 0.5);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
       }
-      ctx.restore();
+      ctx.lineCap = "butt";
       line(ecliptic, c, holo, 0.35, 1, [4, 6]);
 
       // Orbits, sun, planets.
-      orbits.forEach((o) => line(o, c, holo, 0.38, 1));
+      orbits.forEach((o) => {
+        line(o, c, holo, 0.08, 4);
+        line(o, c, holo, 0.42, 1);
+      });
       const sp = project([0, 0, 0], c);
       const g = ctx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, 26);
       g.addColorStop(0, rgba(sun, 1));
@@ -215,10 +242,14 @@ export function Orrery({ targets, onPick }: OrreryProps) {
         }
       });
       ctx.globalAlpha = 1;
-      if (clockRef.current) clockRef.current.textContent = new Date().toISOString().slice(0, 19).replace("T", " ");
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
+    const tickClock = () => {
+      if (clockRef.current) clockRef.current.textContent = new Date().toISOString().slice(0, 19).replace("T", " ");
+    };
+    tickClock();
+    const clock = window.setInterval(tickClock, 1000);
 
     // Drag to turn the view.
     let dragging = false;
@@ -235,6 +266,7 @@ export function Orrery({ targets, onPick }: OrreryProps) {
       if (!dragging || fly.current) return;
       cam.current.yaw += (e.clientX - px) * 0.006;
       cam.current.pitch = Math.min(1.5, Math.max(0.15, cam.current.pitch + (e.clientY - py) * 0.004));
+      dirty = true;
       px = e.clientX;
       py = e.clientY;
     };
@@ -247,6 +279,7 @@ export function Orrery({ targets, onPick }: OrreryProps) {
     wrap.addEventListener("pointercancel", up);
     return () => {
       cancelAnimationFrame(raf);
+      window.clearInterval(clock);
       ro.disconnect();
       wrap.removeEventListener("pointerdown", down);
       wrap.removeEventListener("pointermove", move);
@@ -255,8 +288,11 @@ export function Orrery({ targets, onPick }: OrreryProps) {
     };
   }, [targets]);
 
-  const pick = (p: Preset) => {
+  const pick = (p: Preset, k: number) => {
+    if (fly.current) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return onPick(p);
+    markerRefs.current[k]?.setAttribute("data-picked", "true");
+    onFlightStart?.(p);
     // Turn so the target's direction faces the camera, then fly out toward it.
     // Camera space: the view looks along +y. Put the target straight ahead (x = 0, z = 0, y > 0).
     const v = raDecToEcliptic(p.ra, p.dec);
@@ -265,7 +301,7 @@ export function Orrery({ targets, onPick }: OrreryProps) {
     while (yaw - c.yaw > Math.PI) yaw -= 2 * Math.PI;
     while (c.yaw - yaw > Math.PI) yaw += 2 * Math.PI;
     const pitch = Math.atan2(-v[2], Math.hypot(v[0], v[1]));
-    fly.current = { start: -1, from: { ...c }, to: { yaw, pitch }, p }; // the next frame stamps the start
+    fly.current = { start: -1, from: { ...c }, to: { yaw, pitch }, p, k }; // the next frame stamps the start
   };
 
   return (
@@ -280,8 +316,9 @@ export function Orrery({ targets, onPick }: OrreryProps) {
           }}
           type="button"
           className={s.target}
-          onClick={() => pick(t)}
+          onClick={() => pick(t, k)}
           onPointerEnter={() => (holdRef.current = true)}
+          onPointerDown={() => (holdRef.current = true)}
           onPointerLeave={() => (holdRef.current = false)}
           onFocus={() => (holdRef.current = true)}
           onBlur={() => (holdRef.current = false)}
@@ -297,10 +334,11 @@ export function Orrery({ targets, onPick }: OrreryProps) {
       <p className={`${s.hud} mono`}>
         <span className={s.live}>
           <span className={s.liveDot} aria-hidden="true" />
-          LIVE
+          SKY CONTEXT
         </span>
-        <span ref={clockRef} />
-        <span>UTC</span>
+        <span>
+          UTC NOW <span ref={clockRef} />
+        </span>
         <span className={s.hudNote}>Planet positions approximate · distances compressed · drag to turn</span>
       </p>
     </div>

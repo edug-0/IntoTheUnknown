@@ -14,7 +14,7 @@ interface Star {
 const COUNT = 2600;
 /** Share of stars packed into a Milky Way band across the field. */
 const BAND_SHARE = 0.4;
-const TRAVEL_MS = 1500;
+const TRAVEL_MS = 1000;
 const NEAR = 0.04;
 
 /**

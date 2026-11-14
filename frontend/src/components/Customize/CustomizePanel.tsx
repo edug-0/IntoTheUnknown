@@ -112,7 +112,7 @@ export function CustomizePanel({ open, onOpenChange, values: v, onChange, onRese
           <h3 id="cz-view" className={s.groupTitle}>
             View
           </h3>
-          <Field label="Field of view">
+          <Field label="Field of view" note="Wider views catch faster movers but take longer to load.">
             <Segmented
               label="Field of view in arcminutes"
               value={String(v.fov)}
@@ -134,8 +134,8 @@ export function CustomizePanel({ open, onOpenChange, values: v, onChange, onRese
           <h3 id="cz-image" className={s.groupTitle}>
             Image
           </h3>
-          <Field label="Colour band">
-            <select className={`${s.select} mono`} value={v.band} onChange={(e) => onChange({ band: e.target.value as Band })} aria-label="Colour band">
+          <Field label="Infrared band">
+            <select className={`${s.select} mono`} value={v.band} onChange={(e) => onChange({ band: e.target.value as Band })} aria-label="Infrared band">
               {BAND_OPTIONS.map((b) => (
                 <option key={b} value={b}>
                   {BAND_LABEL[b]}
@@ -205,7 +205,7 @@ export function CustomizePanel({ open, onOpenChange, values: v, onChange, onRese
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, note, children }: { label: string; hint?: string; note?: string; children: React.ReactNode }) {
   return (
     <div className={s.field}>
       <span className={s.label}>
@@ -213,6 +213,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
         {hint && <span className={s.labelHint}> · {hint}</span>}
       </span>
       {children}
+      {note && <span className={s.note}>{note}</span>}
     </div>
   );
 }

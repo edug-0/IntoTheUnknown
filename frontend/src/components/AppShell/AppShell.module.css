@@ -82,3 +82,16 @@
     translate: 0 24px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .bottomIn {
+    animation: dock-fade 150ms linear both !important;
+    animation-duration: 150ms !important;
+  }
+
+  @keyframes dock-fade {
+    from {
+      opacity: 0;
+    }
+  }
+}

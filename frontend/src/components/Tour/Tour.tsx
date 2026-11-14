@@ -26,7 +26,19 @@ export function Tour({ prepare, onClose }: TourProps) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [dir, setDir] = useState<1 | -1>(1);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const step = TOUR[i];
+
+  // A real modal: the page behind is inert, focus stays in the tour and returns where it was on close.
+  useEffect(() => {
+    const d = dialogRef.current;
+    const back = document.activeElement as HTMLElement | null;
+    if (d && !d.open) d.showModal();
+    return () => {
+      if (d?.open) d.close();
+      back?.focus({ preventScroll: true });
+    };
+  }, []);
 
   // Prepare the step, then follow its element every frame (it may load, remount or slide in).
   // Steps whose element never shows up are skipped: after ~8 s when data must load, ~1.5 s otherwise.
@@ -73,8 +85,10 @@ export function Tour({ prepare, onClose }: TourProps) {
   };
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") onClose();
-    else if (e.key === "ArrowRight") go(1);
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === "ArrowRight") go(1);
     else if (e.key === "ArrowLeft") go(-1);
     e.stopPropagation();
   };
@@ -95,7 +109,16 @@ export function Tour({ prepare, onClose }: TourProps) {
   }
 
   return (
-    <div className={s.tour} role="dialog" aria-modal="true" aria-labelledby="tour-title" onKeyDown={onKey}>
+    <dialog
+      ref={dialogRef}
+      className={s.tour}
+      aria-labelledby="tour-title"
+      onKeyDown={onKey}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+    >
       <div
         className={s.hole}
         style={
@@ -131,6 +154,6 @@ export function Tour({ prepare, onClose }: TourProps) {
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
