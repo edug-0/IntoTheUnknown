@@ -44,3 +44,4 @@ Thumbs.db
 
 # SPHEREx Blink proxy cache
 cache/
+scripts/spike_out/
