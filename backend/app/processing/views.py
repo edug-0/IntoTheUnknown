@@ -1,7 +1,6 @@
 """View jobs: find frames (demo pack or live IRSA), stack per epoch, write the manifest and arrays."""
 
 import concurrent.futures as cf
-import hashlib
 import json
 import logging
 import threading
@@ -14,7 +13,7 @@ from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from .. import config
-from ..cache import local
+from ..cache import get_cache, query_key, render_key
 from ..irsa import fetch
 from ..models import ViewRequest
 from . import photometry, stack
@@ -60,14 +59,7 @@ class Job:
 JOBS: dict[str, Job] = {}
 LOCK = threading.Lock()
 POOL = cf.ThreadPoolExecutor(max_workers=config.MAX_RENDER_JOBS)
-
-
-def query_key(req: ViewRequest) -> str:
-    # q2 invalidates pointers made before dense saved captures used the ten-frame gate.
-    key = f"q2|{config.PIPELINE_VERSION}|{req.ra:.4f}|{req.dec:+.4f}|{req.fov_arcmin}|{req.band}"
-    if req.source != "auto":
-        key += f"|{req.source}"
-    return hashlib.sha256(key.encode()).hexdigest()[:20]
+OCTET = "application/octet-stream"
 
 
 # ---------------------------------------------------------------- frame sources
@@ -223,11 +215,20 @@ def build(job: Job) -> None:
     job.status = "render"
     collections = sorted({f["collection"] for f in frames})
     catalog_version = "+".join(collections) or "none"
-    rk = hashlib.sha256(
-        f"{config.PIPELINE_VERSION}|{job.qk}|{','.join(sorted(f['obs'] for ep in epochs for f in ep))}".encode()
-    ).hexdigest()[:24]
-    out = local.render_dir(rk)
+    rk = render_key(config.PIPELINE_VERSION, job.qk, [f["obs"] for ep in epochs for f in ep])
+    cache = get_cache()
+    if not cache.has_render(rk):  # r/ is write-once: a rebuild after a restart only refills job.epochs
+        cache.put_render(rk, *_render(job, rk, epochs, w, shape, source, origin, collections, catalog_version))
+    cache.point(job.qk, rk, catalog_version)
+    job.epochs, job.shape = epochs, shape
+    job.manifest_url = cache.manifest_url(rk)
+    job.status = "ready"
 
+
+def _render(job: Job, rk: str, epochs, w, shape, source, origin, collections, catalog_version) -> tuple[dict, dict]:
+    """Stack each epoch and return (manifest, files) for the cache. Nothing touches storage here."""
+    req = job.req
+    files: dict[str, tuple[bytes, str]] = {}
     stacks: list[np.ndarray] = []
     info: dict = {"channels": [], "bandpass_matched": False}
     if epochs:
@@ -243,9 +244,9 @@ def build(job: Job) -> None:
 
     epoch_rows = []
     for i, (ep, img) in enumerate(zip(epochs, stacks)):
-        img.astype("<f4").tofile(out / f"e{i}.f32")
+        files[f"e{i}.f32"] = (img.astype("<f4").tobytes(), OCTET)
         nan_frac = np.mean([~np.isfinite(f["_grid"][0]) for f in ep], axis=0)
-        (nan_frac > 0.5).astype("u1").tofile(out / f"e{i}.mask.u8")
+        files[f"e{i}.mask.u8"] = ((nan_frac > 0.5).astype("u1").tobytes(), OCTET)
         mjds = [f["t_mjd"] for f in ep]
         lams = [f["lam_um"] for f in ep]
         epoch_rows.append(
@@ -303,11 +304,7 @@ def build(job: Job) -> None:
         ],
         "extras": {"gaia": None, "lightcurve": None, "cube": None},
     }
-    (out / "manifest.json").write_text(json.dumps(manifest))
-    local.write_pointer(job.qk, rk, catalog_version)
-    job.epochs, job.shape = epochs, shape
-    job.manifest_url = f"/frames/r/{rk}/manifest.json"
-    job.status = "ready"
+    return manifest, files
 
 
 def _run(job: Job) -> None:
@@ -321,16 +318,17 @@ def _run(job: Job) -> None:
 
 
 def create(req: ViewRequest) -> Job:
-    qk = query_key(req)
+    qk = query_key(req.ra, req.dec, req.fov_arcmin, req.band, req.source)
     with LOCK:
         job = JOBS.get(qk)
         if job and job.status != "error":
             return job
         job = Job(qk=qk, req=req)
-        ptr = local.read_pointer(qk)
-        if ptr and (config.CACHE_DIR / "r" / ptr["render_key"] / "manifest.json").exists():
+        cache = get_cache()
+        ptr = cache.lookup(qk)  # the pointer is written after the manifest, so a pointer means a whole render
+        if ptr and ptr.get("render_key"):
             job.status, job.from_cache = "ready", True
-            job.manifest_url = f"/frames/r/{ptr['render_key']}/manifest.json"
+            job.manifest_url = cache.manifest_url(ptr["render_key"])
         JOBS[qk] = job
     if job.status != "ready":
         POOL.submit(_run, job)
