@@ -14,7 +14,8 @@ interface AppShellProps {
   bottomReserve: number;
   stage: ReactNode;
   top: ReactNode;
-  bottom: ReactNode;
+  /** Null hides the playback dock (home screen). */
+  bottom: ReactNode | null;
   overlays: ReactNode;
 }
 
@@ -23,6 +24,7 @@ interface AppShellProps {
  * become --chrome-top and --chrome-bottom so the sky image is never placed under glass.
  */
 export function AppShell({ idle, stageLeft, stageRight, hideBottom, bottomReserve, backdrop, stage, top, bottom, overlays }: AppShellProps) {
+  const hasBottom = bottom !== null;
   const shellRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function AppShell({ idle, stageLeft, stageRight, hideBottom, bottomReserv
     if (topRef.current) ro.observe(topRef.current);
     if (bottomRef.current) ro.observe(bottomRef.current);
     return () => ro.disconnect();
-  }, [hideBottom, bottomReserve]);
+  }, [hideBottom, bottomReserve, hasBottom]);
 
   return (
     <div
@@ -56,9 +58,11 @@ export function AppShell({ idle, stageLeft, stageRight, hideBottom, bottomReserv
       <div ref={topRef} className={`${s.top} ${s.chrome}`}>
         {top}
       </div>
-      <div ref={bottomRef} className={`${s.bottom} ${s.chrome} ${hideBottom ? s.hiddenOnSheet : ""}`}>
-        {bottom}
-      </div>
+      {bottom !== null && (
+        <div ref={bottomRef} className={`${s.bottom} ${s.chrome} ${s.bottomIn} ${hideBottom ? s.hiddenOnSheet : ""}`}>
+          {bottom}
+        </div>
+      )}
       {overlays}
     </div>
   );

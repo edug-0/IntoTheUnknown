@@ -197,40 +197,45 @@
   color: var(--text-1);
 }
 
-/* Home: the whole sky. */
+/* Home: the live orrery fills the stage under a short heading. */
 .home {
   height: 100%;
   display: grid;
-  grid-template-rows: auto 1fr;
-  align-items: center;
+  grid-template-rows: auto minmax(0, 1fr);
   justify-items: center;
-  gap: 8px;
-  overflow-y: auto;
-  scrollbar-width: none;
+  gap: 4px;
+  overflow: clip;
 }
 
 .homeText {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   justify-items: center;
   text-align: center;
-  max-width: 620px;
+  max-width: 640px;
+  position: relative;
+  z-index: 1;
+}
+
+.kicker {
+  margin: 0;
+  letter-spacing: 0.3em;
 }
 
 .homeTitle {
   margin: 0;
-  font-size: clamp(30px, 4.2vw, 52px);
+  font-size: clamp(28px, 3.6vw, 46px);
 }
 
 .homeSub {
-  margin: 0;
+  margin: 0 0 4px;
   color: var(--text-2);
   font-size: 15px;
 }
 
 .homeMap {
-  width: min(100%, 1040px, calc((100dvh - var(--chrome-top) - var(--chrome-bottom) - 150px) * 1.9));
-  padding: 0 12px;
+  width: 100%;
+  height: 100%;
 }
 
 /* States */
@@ -303,9 +308,8 @@
     display: none;
   }
 
-  .homeMap {
-    width: 100%;
-    padding: 0;
+  .homeSub {
+    font-size: 13px;
   }
 }
 

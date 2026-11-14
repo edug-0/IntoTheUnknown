@@ -6,7 +6,7 @@ import { renderDifference, renderEpoch, tokenRgb } from "../../lib/stretch";
 import { PRESETS, type Preset } from "../../lib/targets";
 import type { Overlays, StretchKind, ViewMode } from "../../lib/url";
 import type { FovArcmin, GaiaResult } from "../../types";
-import { AllSkyMap } from "../AllSkyMap/AllSkyMap";
+import { Orrery } from "../Orrery/Orrery";
 import { GlassButton, GlassPanel } from "../glass";
 import { buildGrid } from "./grid";
 import s from "./SkyStage.module.css";
@@ -56,22 +56,22 @@ export function SkyStage(props: SkyStageProps) {
   );
 }
 
-/** First visit: the whole sky with the five targets where they really are. */
+/** First visit: a live holographic orrery, with the five targets on the sky around the solar system. */
 function Home({ onPreset, onTour }: { onPreset: (p: Preset) => void; onTour: () => void }) {
   return (
     <section className={s.home} aria-labelledby="home-title">
       <div className={s.homeText}>
-        <p className="micro">SPHEREx · the whole sky every six months</p>
+        <p className={`micro ${s.kicker}`}>SPHEREx · the whole sky every six months</p>
         <h2 id="home-title" className={`display ${s.homeTitle}`}>
           Pick a target to begin
         </h2>
-        <p className={s.homeSub}>Choose one of five test objects on the map, or search by name or RA, Dec. Then press Play and watch for the dot that moves.</p>
+        <p className={s.homeSub}>Click a target on the sky sphere to fly there, or search above. Then press Play and watch for the dot that moves.</p>
         <GlassButton icon="tour" onClick={onTour}>
           New here? Take the one-minute tour
         </GlassButton>
       </div>
-      <div className={s.homeMap}>
-        <AllSkyMap targets={PRESETS} activeId={null} onPick={onPreset} />
+      <div className={s.homeMap} data-tour="orrery">
+        <Orrery targets={PRESETS} onPick={onPreset} />
       </div>
     </section>
   );

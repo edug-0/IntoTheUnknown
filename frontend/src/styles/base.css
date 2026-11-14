@@ -23,6 +23,13 @@ body {
   overflow: hidden;
 }
 
+/* "clip" (not just "hidden") so focusing an off-screen control can never scroll the page and cut off the top bar. */
+html,
+body,
+#root {
+  overflow: clip;
+}
+
 button,
 input,
 select {

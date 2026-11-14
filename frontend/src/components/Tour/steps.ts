@@ -16,7 +16,7 @@ export const TOUR: TourStep[] = [
   {
     target: "targets",
     title: "Pick something to look at",
-    text: "Five objects from the NASA challenge. Each shows something different: a fast star, a cold brown dwarf, stars that change brightness. You can also search a name or type RA, Dec.",
+    text: "Five objects from the NASA challenge: a fast star, a cold brown dwarf, stars that change brightness. On the home screen they also hang on the sky sphere around a live view of the solar system. You can search a name or type RA, Dec too.",
   },
   {
     target: "dome",

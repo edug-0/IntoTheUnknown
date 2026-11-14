@@ -7,9 +7,13 @@ interface Star {
   x: number;
   y: number;
   z: number;
+  /** 0 = white, 1 = warm, 2 = blue-white. */
+  tint: number;
 }
 
-const COUNT = 900;
+const COUNT = 2600;
+/** Share of stars packed into a Milky Way band across the field. */
+const BAND_SHARE = 0.4;
 const TRAVEL_MS = 1500;
 const NEAR = 0.04;
 
@@ -31,8 +35,15 @@ export function SkyBackdrop({ dim, travelKey }: { dim: boolean; travelKey: strin
     const ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const rnd = seeded(20261115);
-    stars.current = Array.from({ length: COUNT }, () => ({ x: rnd() * 2 - 1, y: rnd() * 2 - 1, z: NEAR + rnd() * (1 - NEAR) }));
-    const [r, g, b] = tokenRgb("--star");
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+    stars.current = Array.from({ length: COUNT }, () => {
+      const inBand = rnd() < BAND_SHARE;
+      const x = rnd() * 2 - 1;
+      const y = inBand ? 0.42 * x + gauss() * 0.09 : rnd() * 2 - 1;
+      const t = rnd();
+      return { x, y, z: NEAR + rnd() * (1 - NEAR), tint: t < 0.08 ? 1 : t < 0.16 ? 2 : 0 };
+    });
+    const palette = [tokenRgb("--star"), tokenRgb("--sun"), tokenRgb("--accent")];
     let w = 0;
     let h = 0;
     const resize = () => {
@@ -57,7 +68,8 @@ export function SkyBackdrop({ dim, travelKey }: { dim: boolean; travelKey: strin
         const py = cy + (st.y / st.z) * f;
         if (px < -50 || py < -50 || px > w + 50 || py > h + 50) continue;
         const near = 1 - st.z;
-        const a = 0.1 + near ** 2 * 0.85;
+        const a = 0.14 + near ** 2 * 0.86;
+        const [r, g, b] = palette[st.tint];
         if (Math.abs(streak) > 1e-4) {
           const z0 = Math.min(1.2, Math.max(NEAR, st.z + streak));
           ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
@@ -69,8 +81,15 @@ export function SkyBackdrop({ dim, travelKey }: { dim: boolean; travelKey: strin
         } else {
           ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
           ctx.beginPath();
-          ctx.arc(px, py, 0.35 + near ** 3 * 1.6, 0, Math.PI * 2);
+          ctx.arc(px, py, 0.3 + near ** 3 * 1.7, 0, Math.PI * 2);
           ctx.fill();
+          if (near > 0.9) {
+            // The nearest few get a soft halo.
+            ctx.fillStyle = `rgba(${r},${g},${b},0.08)`;
+            ctx.beginPath();
+            ctx.arc(px, py, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       }
     };
@@ -99,7 +118,7 @@ export function SkyBackdrop({ dim, travelKey }: { dim: boolean; travelKey: strin
         if (st.z < NEAR) {
           st.z += 1 - NEAR;
           st.x = Math.random() * 2 - 1;
-          st.y = Math.random() * 2 - 1;
+          st.y = Math.random() < BAND_SHARE ? 0.42 * st.x + (Math.random() - 0.5) * 0.25 : Math.random() * 2 - 1;
         } else if (st.z > 1) {
           st.z -= 1 - NEAR;
         }

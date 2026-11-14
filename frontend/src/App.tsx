@@ -306,6 +306,7 @@ export default function App({ source }: { source: ViewSource }) {
         />
       }
       bottom={
+        load.kind === "idle" ? null : (
         <PlaybackBar
           epochs={epochs}
           index={pb.index}
@@ -322,6 +323,7 @@ export default function App({ source }: { source: ViewSource }) {
           onMode={setMode}
           onCustomize={() => setCustomizeOpen(!customizeOpen)}
         />
+        )
       }
       overlays={
         <>
