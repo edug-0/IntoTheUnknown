@@ -85,7 +85,9 @@ including what to look for in each target.
 6. **Combine, stretch, display.** Frames use an asinh stretch (Lupton et al. 1999) with the sky set near black,
    so the image reads as a dark night sky and both faint and very bright stars show.
 7. **Photometry.** A 2.2-pixel aperture with a 4–7-pixel sky annulus, converted from MJy/sr to µJy. An optional
-   aperture correction divides by the fraction of a pixel-sampled Gaussian PSF that falls on the same pixels.
+   aperture correction divides by the fraction of a Gaussian PSF that falls on the same pixels. The Gaussian takes
+   its width from each file's `PSF_FWHM` header (7.45″ for D1–D3 up to 9.0″ for D6) and is integrated over each
+   pixel, because SPHEREx's PSF is undersampled (σ ≈ 0.5–0.6 px).
 
 Everything after the download runs in the browser. There is no build step and no framework.
 
@@ -129,11 +131,11 @@ In simulated mode the Spectrum tab draws the input model as a dashed line, so yo
 matches. `tests/test_sim.py` checks this automatically for all five targets:
 
 ```
-Barnard's Star  centroid max=0.119px  flux ratio median=1.000  6-det simultaneous=True
-ε Indi B        centroid max=0.167px  flux ratio median=0.999  6-det simultaneous=True
-WISE 0855       centroid max=0.731px  flux ratio median=0.986  6-det simultaneous=True   (faint: low S/N)
+Barnard's Star  centroid max=0.002px  flux ratio median=1.000  6-det simultaneous=True
+ε Indi B        centroid max=0.083px  flux ratio median=1.000  6-det simultaneous=True
+WISE 0855       centroid max=0.740px  flux ratio median=0.977  6-det simultaneous=True   (faint: low S/N)
 RW Aurigae      centroid max=0.001px  flux ratio median=1.000  6-det simultaneous=True
-R Draconis      centroid max=0.063px  flux ratio median=1.000  6-det simultaneous=True
+R Draconis      centroid max=0.007px  flux ratio median=1.000  6-det simultaneous=True
 PASS
 ```
 
@@ -145,6 +147,7 @@ PSF width and single-exposure depths in the simulation are approximations, not c
 pip install playwright numpy astropy
 python3 server.py --port 8811 &
 python3 tests/test_sim.py /tmp/shots --base http://127.0.0.1:8811       # simulated known-answer test
+python3 tests/test_demo.py /tmp/shots --base http://127.0.0.1:8811      # real demo pack: wavelengths, unbiased photometry
 python3 tests/mock_server.py . 8765 &                                    # mock IRSA with real-format FITS
 python3 tests/run_test.py /tmp/shots                                     # live path against the mock archive
 ```
@@ -156,8 +159,14 @@ python3 tests/run_test.py /tmp/shots                                     # live 
   overflow) are blanked. Every bit is counted, and hovering the *flags* cell in the Exposures tab shows the
   breakdown. `SOURCE` pixels (on a detected star) are not counted as bad. If a file carries no bit definitions,
   flags are reported but nothing is blanked.
-- **Detector offset of a cutout.** The wavelength lookup reads it from the alternate WCS `A` keywords. If those
-  are missing, it uses the detector's band centre and says so in the Exposures tab.
+- **Per-pixel wavelength.** It comes from the file's `WCS-WAVE` table: a 9×9 grid of [wavelength, bandwidth]
+  pairs, read according to its `TDIM` (real files interleave the pair: `(2,9,9)`). The cutout's offset on the
+  detector comes from the alternate WCS `A` keywords. If those are missing, the tool uses the detector's band centre
+  and says so in the Exposures tab.
+- **Blends.** The photometry aperture has a 13.5″ radius (SPHEREx pixels are 6.15″), so a neighbouring star can
+  add light. Example: in the 2025 data, WISE 0855 passes ~6″ from a background star that is bright at 1–2 µm, so
+  its short-wavelength points are that star while its 4–5 µm points are WISE 0855 itself. Blank-sky apertures in
+  the same cutouts measure 0 ± noise, so this is real light, not a bias.
 - **Saturation** of very bright stars (Barnard's Star, R Dra) is not modelled in the simulation. In real data,
   saturated cores are flagged.
 

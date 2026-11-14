@@ -281,7 +281,7 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
     <div class="legend" id="specLegend"></div>
     <label class="chk"><input type="checkbox" id="specLog" checked> Log flux axis</label>
     <label class="chk"><input type="checkbox" id="specTrack" checked> Follow the target's predicted position</label>
-    <label class="chk"><input type="checkbox" id="specApcor" checked> Aperture correction (Gaussian PSF model)</label>
+    <label class="chk"><input type="checkbox" id="specApcor" checked> Aperture correction (PSF from each file)</label>
     <div class="kv" id="photInfo" style="margin-top:8px"></div>
   </div>
   <div class="tab" id="tab-lc">
@@ -377,7 +377,7 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
         <li>Subtract the zodiacal-light model (<code>ZODI</code>) and each image's median sky.</li>
         <li>Resample every cutout through its own TAN-SIP WCS onto one north-up 6.15″/pixel grid, because SPHEREx rolls between visits.</li>
         <li>Combine the chosen detectors in each frame (median, mean or sum), then stretch for display.</li>
-        <li>Photometry: a 2.2-pixel aperture with a 4–7-pixel sky annulus, converted from MJy/sr to µJy. An optional aperture correction uses a Gaussian PSF model whose width grows with wavelength.</li>
+        <li>Photometry: a 2.2-pixel aperture with a 4–7-pixel sky annulus, converted from MJy/sr to µJy. An optional aperture correction uses a Gaussian PSF with the width given in each file's <code>PSF_FWHM</code> header, integrated over each pixel.</li>
       </ol>
       <h4>How the simulated sky is built</h4>
       <p>Simulated mode is clearly labelled. It exists so the tool works offline and so you can check the analysis against a known answer. It uses:</p>
@@ -420,7 +420,9 @@ const CONFIG = {
   SURVEY_START: 2025.3315,          // SPHEREx all-sky survey began 2025-05-01
   // Approximate PSF: Gaussian sigma in pixels as a function of wavelength (µm). Used by the
   // simulation and by the optional aperture correction.
-  PSF_SIGMA_PX: lam => 0.85 + 0.10*lam,
+  // Fallback only: real files carry PSF_FWHM in the IMAGE header (7.45″ for D1–D3 up to 9.0″ for D6), which is used
+  // per exposure. This fit to those values gives σ ≈ 0.52 px at 1 µm and 0.62 px at 4.7 µm: the PSF is undersampled.
+  PSF_SIGMA_PX: lam => 0.495 + 0.026*lam,
   APERTURE_PX: 2.2, ANNULUS_PX: [4, 7],
 };
 // SPHEREx's six detector arrays: wavelength range (µm) and spectral resolving power R = λ/Δλ.
@@ -615,6 +617,11 @@ function makeWaveFn(imgCards, waveHdu, det){
   try{
     if(!waveHdu) return fallback;
     const row=readTableRow0(waveHdu); const X=row.X, Y=row.Y, V=row.VALUES;
+    // VALUES holds [wavelength, bandwidth] on the X×Y grid. TDIM gives the axis order (fastest first):
+    // real SPHEREx files use "(2,9,9)" (the pair interleaved per grid point); "(9,9,2)" means two separate planes.
+    const vi=Object.entries(waveHdu.cards).find(([k,v])=>/^TTYPE\d+$/.test(k) && String(v).trim().toUpperCase()==="VALUES");
+    const tdim=String(waveHdu.cards["TDIM"+(vi? vi[0].slice(5):"3")]||"").replace(/[()\s]/g,"").split(",").map(Number);
+    const interleaved = tdim[0]===2;
     if(!X||!Y||!V||V.length < 2*X.length*Y.length) return fallback;
     const nx=X.length, ny=Y.length;
     const c=imgCards; const hasA = c.CRPIX1A!==undefined && c.CRVAL1A!==undefined;
@@ -623,7 +630,7 @@ function makeWaveFn(imgCards, waveHdu, det){
     const idx=(arr,v)=>{ let i=0; while(i<arr.length-2 && v>arr[i+1]) i++; const t=clamp((v-arr[i])/(arr[i+1]-arr[i]),0,1); return [i,t]; };
     return (x,y)=>{
       const [dx,dy]=toDet(x,y); const [i,tx]=idx(X,dx), [j,ty]=idx(Y,dy);
-      const at=(k,jj,ii)=>V[k*nx*ny + jj*nx + ii];
+      const at=(k,jj,ii)=> interleaved? V[(jj*nx + ii)*2 + k] : V[k*nx*ny + jj*nx + ii];
       const bil=k=> at(k,j,i)*(1-tx)*(1-ty) + at(k,j,i+1)*tx*(1-ty) + at(k,j+1,i)*(1-tx)*ty + at(k,j+1,i+1)*tx*ty;
       const lam=bil(0), bw=bil(1);
       if(!(lam>0.5 && lam<5.5)) return fallback();
@@ -781,6 +788,7 @@ async function loadCutout(row){
   let nan=0; for(const v of data) if(!Number.isFinite(v)) nan++;
   return { ...row, url: `${CONFIG.IRSA}/${row.uri}`, cutURL: row.local || url, data, wcs, wave, lam:w.lam, bw:w.bw, lamSrc:w.src,
            nanFrac: nan/data.length, flagInfo, flagTip,
+           psfSig: ih.cards.PSF_FWHM>0 ? ih.cards.PSF_FWHM/2.3548/CONFIG.PIX_ARCSEC : null,
            version: row.version || ih.cards.VERSION || hdus[0].cards.VERSION || "" };
 }
 // Bilinear resampling from a cutout onto the output grid (north up, east left), in surface-brightness units.
@@ -814,6 +822,10 @@ const queryWise = ()=> queryVizier("II/328/allwise", `"RAJ2000","DEJ2000","W1mag
 // A clearly labelled synthetic sky, used offline and as a known-answer check of the whole analysis chain.
 // Units match real SPHEREx images: MJy/sr per pixel. Point-source fluxes are in µJy (F_ν).
 const PIX_SR = ()=> (S.scaleDeg*D2R)**2;
+// Fraction of a 1-D Gaussian (σ) centred at c that falls in the pixel [i-0.5, i+0.5]. SPHEREx's PSF is undersampled
+// (σ ≈ 0.5–0.6 px), so the PSF must be integrated over each pixel, not sampled at pixel centres.
+function erf(x){ const t=1/(1+0.3275911*Math.abs(x)); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x>=0? y : -y; }
+const pixFrac = (i, c, sig) => 0.5*(erf((i+0.5-c)/(Math.SQRT2*sig)) - erf((i-0.5-c)/(Math.SQRT2*sig)));
 const UJY_TO_MJYSR = ()=> 1e-12/PIX_SR();          // µJy spread over one pixel -> MJy/sr
 const abToUJy = m => Math.pow(10, -0.4*(m-23.9));
 const uJyToAB = f => 23.9 - 2.5*Math.log10(f);
@@ -897,11 +909,11 @@ function simulate(t){
         const sigPix = abToUJy(D.depth)/5/Math.sqrt(4*Math.PI*sig*sig)*K;   // per-pixel noise, MJy/sr
         const img=new Float32Array(N*N);
         for(let i=0;i<img.length;i++) img[i]=sigPix*gauss(rng);
-        const addStar=(x,y,fUJy)=>{ const r=Math.ceil(5*sig); const cx=half+x, cy=half+y, a=fUJy*K/(2*Math.PI*sig*sig);
+        const addStar=(x,y,fUJy)=>{ const r=Math.ceil(5*sig)+1; const cx=half+x, cy=half+y, a=fUJy*K;
           if(cx<-r||cy<-r||cx>N+r||cy>N+r) return;
           for(let j=Math.max(0,Math.floor(cy-r)); j<=Math.min(N-1,Math.ceil(cy+r)); j++)
             for(let i=Math.max(0,Math.floor(cx-r)); i<=Math.min(N-1,Math.ceil(cx+r)); i++)
-              img[j*N+i]+= a*Math.exp(-((i-cx)**2+(j-cy)**2)/(2*sig*sig)); };
+              img[j*N+i]+= a*pixFrac(i,cx,sig)*pixFrac(j,cy,sig); };
         for(const s of field) addStar(s.x, s.y, s.k*planckNu(lam,s.T));
         // target, moved by proper motion + parallax, with its spectrum and variability
         const [ra,dec]=propagate(t, year); const [xi,eta]=tanFwd(ra,dec,S.center[0],S.center[1]);
@@ -1074,16 +1086,16 @@ function renderTimeline(){
 
 /* ============================ photometry / spectra ============================ */
 // Aperture photometry in µJy. With the aperture correction on, the background-subtracted sum is divided by the
-// fraction of a pixel-sampled Gaussian PSF (width from CONFIG.PSF_SIGMA_PX) that lands on the same valid pixels.
+// fraction of a pixel-integrated Gaussian PSF (width from the file's PSF_FWHM, else CONFIG.PSF_SIGMA_PX) that lands on the same valid pixels.
 // That accounts for where the star sits within its pixel, for masked pixels, and for the PSF growing with wavelength.
 // (Scaling by "circle area / pixel count" instead would over-read a star centred on a pixel by ~17%.)
-function aperture(data, cx, cy, lam){
-  const N=S.N, an=[], A=CONFIG.APERTURE_PX, [a1,a2]=CONFIG.ANNULUS_PX, sg=CONFIG.PSF_SIGMA_PX(Number.isFinite(lam)? lam : 2.5);
+function aperture(data, cx, cy, lam, psfSig){
+  const N=S.N, an=[], A=CONFIG.APERTURE_PX, [a1,a2]=CONFIG.ANNULUS_PX, sg=psfSig || CONFIG.PSF_SIGMA_PX(Number.isFinite(lam)? lam : 2.5);
   let sum=0, nap=0, psf=0;
   const apv=[];
   for(let j=Math.max(0,Math.floor(cy-a2-1)); j<=Math.min(N-1,Math.ceil(cy+a2+1)); j++) for(let i=Math.max(0,Math.floor(cx-a2-1)); i<=Math.min(N-1,Math.ceil(cx+a2+1)); i++){
     const r=Math.hypot(i-cx,j-cy), v=data[j*N+i]; if(!Number.isFinite(v)) continue;
-    if(r<=A){ apv.push(v); psf+=Math.exp(-r*r/(2*sg*sg))/(2*Math.PI*sg*sg); nap++; } else if(r>=a1 && r<=a2) an.push(v); }
+    if(r<=A){ apv.push(v); psf+=pixFrac(i,cx,sg)*pixFrac(j,cy,sg); nap++; } else if(r>=a1 && r<=a2) an.push(v); }
   if(nap<8 || an.length<10) return NaN;
   const bg=medianOf(an); for(const v of apv) sum+=v-bg;
   if($("specApcor").checked) sum/=psf;
@@ -1099,7 +1111,7 @@ function updatePhot(){
     const [xi,eta]=tanFwd(ra,dec,S.center[0],S.center[1]);
     const cx=half - xi/S.scaleDeg, cy=half - eta/S.scaleDeg;
     let lam=e.lam; if(e.wcs && e.wave){ const [x,y]=e.wcs.sky2pix(ra,dec); const w=e.wave(x,y); lam=w.lam; }
-    pts.push({e, lam, year:e.year, det:e.det, f:aperture(e.data,cx,cy,lam)});
+    pts.push({e, lam, year:e.year, det:e.det, f:aperture(e.data,cx,cy,lam,e.psfSig)});
   }
   const f=S.frames[S.cur];
   if(S.phot.track){ [S.phot.ra,S.phot.dec]=propagate(S.target, f? f.year:2026); }
@@ -1216,7 +1228,7 @@ function setupGeometry(t){
   S.center = propagate(t, 2026.0); // centre of the grid: the target near mid-survey
 }
 async function load(){
-  stop(); const token=++S.loadToken;
+  stop(); const token=++S.loadToken; srcNote();
   let t; try{ t=readTarget(); }catch(e){ setBanner(e.message,"err"); return; }
   document.querySelectorAll(".preset").forEach(b=>b.classList.toggle("on", b.dataset.name===t.name));
   let demoSlug=null;
