@@ -26,7 +26,7 @@ CHECK = """() => {
   for(const e of S.exps){ const D=DETS[e.det-1]; if(!(e.lam>=D.lo-0.05 && e.lam<=D.hi+0.05) || e.lamSrc!=="WCS-WAVE") bad.push([e.det,e.lam,e.lamSrc]);
     for(let k=0;k<6;k++){ const c=6+((k*7919)%(S.N-12)), r=6+((k*104729)%(S.N-12)); const f=aperture(e.data,c,r,e.lam,e.psfSig); if(Number.isFinite(f)) blank.push(f); } }
   blank.sort((x,y)=>x-y); const q=f=>blank[Math.floor(f*(blank.length-1))];
-  return {n:S.exps.length, seasons:clusterTimes(S.exps,CONFIG.SEASON_GAP_DAYS).length, bad, med:q(0.5), sig:(q(0.84)-q(0.16))/2,
+  return {n:S.exps.length, seasons:seasonGroups(S.exps).length, bad, med:q(0.5), sig:(q(0.84)-q(0.16))/2,
           measured:S.photPts.filter(p=>Number.isFinite(p.f)).length};
 }"""
 fails, errors = [], []

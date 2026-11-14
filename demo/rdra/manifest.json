@@ -5,7 +5,7 @@
   66.75499363151293
  ],
  "fov_arcmin": 8,
- "generated": "2026-11-14T18:34:09Z",
+ "generated": "2026-11-14T22:35:18Z",
  "archive_exposures": 2493,
  "releases": [
   "dr1",
@@ -13,166 +13,744 @@
  ],
  "files": [
   {
-   "file": "60841.44885_D2.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/2/level2_2025W24_2D_0534_3D2_spx_l2b-v27-2026-202.fits",
-   "mjd": 60841.44885,
-   "det": 2,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 16264
-  },
-  {
-   "file": "60841.44885_D5.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/5/level2_2025W24_2D_0534_3D5_spx_l2b-v27-2026-202.fits",
-   "mjd": 60841.44885,
-   "det": 5,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 14209
-  },
-  {
-   "file": "60933.69392_D1.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W38_1A/l2b-v27-2026-237/1/level2_2025W38_1A_0202_2D1_spx_l2b-v27-2026-237.fits",
-   "mjd": 60933.693916,
-   "det": 1,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 14727
-  },
-  {
-   "file": "60933.69541_D4.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W38_1A/l2b-v27-2026-237/4/level2_2025W38_1A_0202_3D4_spx_l2b-v27-2026-237.fits",
-   "mjd": 60933.695408,
-   "det": 4,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 15820
-  },
-  {
-   "file": "61010.02558_D2.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/2/level2_2025W49_1A_0009_3D2_spx_l2b-v27-2026-209.fits",
-   "mjd": 61010.025578,
-   "det": 2,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 14999
-  },
-  {
-   "file": "61010.02558_D5.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2025W49_1A/l2b-v27-2026-209/5/level2_2025W49_1A_0009_3D5_spx_l2b-v27-2026-209.fits",
-   "mjd": 61010.025578,
-   "det": 5,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 13619
-  },
-  {
-   "file": "61083.55892_D3.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W07_2A/l2b-v27-2026-226/3/level2_2026W07_2A_0014_3D3_spx_l2b-v27-2026-226.fits",
-   "mjd": 61083.558919,
-   "det": 3,
-   "rel": "dr1",
-   "version": "7.0.5",
-   "bytes": 14818
-  },
-  {
-   "file": "61085.52637_D6.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W07_2A/l2b-v27-2026-226/6/level2_2026W07_2A_0385_2D6_spx_l2b-v27-2026-226.fits",
-   "mjd": 61085.526368,
+   "file": "60792.46281_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/6/level2_2025W17_4B_0409_3D6_spx_l2b-v27-2026-196.fits",
+   "mjd": 60792.462808,
    "det": 6,
    "rel": "dr1",
    "version": "7.0.5",
-   "bytes": 13534
+   "bytes": 26585
   },
   {
-   "file": "61117.10237_D3.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W12_1A/l2b-v27-2026-235/3/level2_2026W12_1A_0381_4D3_spx_l2b-v27-2026-235.fits",
-   "mjd": 61117.10237,
+   "file": "60792.46430_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W17_4B/l2b-v27-2026-196/3/level2_2025W17_4B_0409_4D3_spx_l2b-v27-2026-196.fits",
+   "mjd": 60792.4643,
    "det": 3,
    "rel": "dr1",
    "version": "7.0.5",
-   "bytes": 15298
+   "bytes": 26652
   },
   {
-   "file": "61118.72818_D6.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/6/level2_2026W12_2A_0044_2D6_spx_l2b-v27-2026-235.fits",
-   "mjd": 61118.728182,
+   "file": "60796.61054_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W18_2B/l2b-v27-2026-197/6/level2_2025W18_2B_0015_4D6_spx_l2b-v27-2026-197.fits",
+   "mjd": 60796.610544,
    "det": 6,
    "rel": "dr1",
    "version": "7.0.5",
-   "bytes": 13041
+   "bytes": 26871
   },
   {
-   "file": "61141.81004_D3.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W15_2A/l2b-v27-2026-240/3/level2_2026W15_2A_0559_2D3_spx_l2b-v27-2026-240.fits",
-   "mjd": 61141.810036,
+   "file": "60797.82707_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W18_2B/l2b-v27-2026-197/3/level2_2025W18_2B_0202_1D3_spx_l2b-v27-2026-197.fits",
+   "mjd": 60797.827068,
    "det": 3,
    "rel": "dr1",
    "version": "7.0.5",
-   "bytes": 14617
+   "bytes": 20195
   },
   {
-   "file": "61141.81302_D6.fits.gz",
-   "uri": "ibe/data/spherex/dr1/level2/2026W15_2A/l2b-v27-2026-240/6/level2_2026W15_2A_0559_4D6_spx_l2b-v27-2026-240.fits",
-   "mjd": 61141.813021,
+   "file": "60832.13683_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/3/level2_2025W23_2B_0129_2D3_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.136834,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26080
+  },
+  {
+   "file": "60832.13683_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/6/level2_2025W23_2B_0129_2D6_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.136834,
    "det": 6,
    "rel": "dr1",
    "version": "7.0.5",
-   "bytes": 12546
+   "bytes": 25332
   },
   {
-   "file": "61212.61827_D2.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0661_1D2_spx_l2b-v27-2026-273.fits",
-   "mjd": 61212.618274,
+   "file": "60832.47389_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/1/level2_2025W23_2B_0206_1D1_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.473887,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26200
+  },
+  {
+   "file": "60832.47389_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_1D4_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.473887,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27406
+  },
+  {
+   "file": "60832.47687_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/1/level2_2025W23_2B_0206_3D1_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.476872,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26924
+  },
+  {
+   "file": "60832.47687_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_3D4_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.476872,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27022
+  },
+  {
+   "file": "60832.47836_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/1/level2_2025W23_2B_0206_4D1_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.478364,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26539
+  },
+  {
+   "file": "60832.47836_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/4/level2_2025W23_2B_0206_4D4_spx_l2b-v27-2026-201.fits",
+   "mjd": 60832.478364,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27478
+  },
+  {
+   "file": "60834.79223_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/2/level2_2025W23_2B_0696_4D2_spx_l2b-v27-2026-201.fits",
+   "mjd": 60834.792227,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26992
+  },
+  {
+   "file": "60834.79223_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W23_2B/l2b-v27-2026-201/5/level2_2025W23_2B_0696_4D5_spx_l2b-v27-2026-201.fits",
+   "mjd": 60834.792227,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26932
+  },
+  {
+   "file": "60836.01357_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/2/level2_2025W24_1A_0215_3D2_spx_l2b-v27-2026-201.fits",
+   "mjd": 60836.013566,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27142
+  },
+  {
+   "file": "60836.01357_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W24_1A/l2b-v27-2026-201/5/level2_2025W24_1A_0215_3D5_spx_l2b-v27-2026-201.fits",
+   "mjd": 60836.013566,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26973
+  },
+  {
+   "file": "60841.45034_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/2/level2_2025W24_2D_0534_4D2_spx_l2b-v27-2026-202.fits",
+   "mjd": 60841.450343,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27136
+  },
+  {
+   "file": "60841.45034_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W24_2D/l2b-v27-2026-202/5/level2_2025W24_2D_0534_4D5_spx_l2b-v27-2026-202.fits",
+   "mjd": 60841.450343,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27407
+  },
+  {
+   "file": "60851.57121_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W26_1A/l2b-v27-2026-213/2/level2_2025W26_1A_0506_3D2_spx_l2b-v27-2026-213.fits",
+   "mjd": 60851.571214,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 21244
+  },
+  {
+   "file": "60851.57121_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W26_1A/l2b-v27-2026-213/5/level2_2025W26_1A_0506_3D5_spx_l2b-v27-2026-213.fits",
+   "mjd": 60851.571214,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 21706
+  },
+  {
+   "file": "60857.68325_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/2/level2_2025W27_1A_0331_2D2_spx_l2b-v27-2026-214.fits",
+   "mjd": 60857.683254,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 23002
+  },
+  {
+   "file": "60857.68325_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/5/level2_2025W27_1A_0331_2D5_spx_l2b-v27-2026-214.fits",
+   "mjd": 60857.683254,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 25277
+  },
+  {
+   "file": "60858.90607_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/2/level2_2025W27_1A_0555_2D2_spx_l2b-v27-2026-214.fits",
+   "mjd": 60858.906068,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 22249
+  },
+  {
+   "file": "60858.90607_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_1A/l2b-v27-2026-214/5/level2_2025W27_1A_0555_2D5_spx_l2b-v27-2026-214.fits",
+   "mjd": 60858.906068,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 23768
+  },
+  {
+   "file": "60861.96368_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_2A/l2b-v27-2026-215/1/level2_2025W27_2A_0557_2D1_spx_l2b-v27-2026-215.fits",
+   "mjd": 60861.96368,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27092
+  },
+  {
+   "file": "60861.96368_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W27_2A/l2b-v27-2026-215/4/level2_2025W27_2A_0557_2D4_spx_l2b-v27-2026-215.fits",
+   "mjd": 60861.96368,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27205
+  },
+  {
+   "file": "60873.44527_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/1/level2_2025W29_1A_0676_2D1_spx_l2b-v27-2026-217.fits",
+   "mjd": 60873.445266,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27025
+  },
+  {
+   "file": "60873.44527_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W29_1A/l2b-v27-2026-217/4/level2_2025W29_1A_0676_2D4_spx_l2b-v27-2026-217.fits",
+   "mjd": 60873.445266,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27801
+  },
+  {
+   "file": "60874.86985_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W29_2A/l2b-v27-2026-219/1/level2_2025W29_2A_0351_1D1_spx_l2b-v27-2026-219.fits",
+   "mjd": 60874.869855,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26737
+  },
+  {
+   "file": "60874.86985_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W29_2A/l2b-v27-2026-219/4/level2_2025W29_2A_0351_1D4_spx_l2b-v27-2026-219.fits",
+   "mjd": 60874.869855,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27481
+  },
+  {
+   "file": "60922.55850_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W36_2B/l2b-v27-2026-234/1/level2_2025W36_2B_0015_4D1_spx_l2b-v27-2026-234.fits",
+   "mjd": 60922.558498,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 24687
+  },
+  {
+   "file": "60922.55850_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W36_2B/l2b-v27-2026-234/4/level2_2025W36_2B_0015_4D4_spx_l2b-v27-2026-234.fits",
+   "mjd": 60922.558498,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 24175
+  },
+  {
+   "file": "60932.94701_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W37_2A/l2b-v27-2026-236/1/level2_2025W37_2A_0840_3D1_spx_l2b-v27-2026-236.fits",
+   "mjd": 60932.947007,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26936
+  },
+  {
+   "file": "60932.94701_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W37_2A/l2b-v27-2026-236/4/level2_2025W37_2A_0840_3D4_spx_l2b-v27-2026-236.fits",
+   "mjd": 60932.947007,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27825
+  },
+  {
+   "file": "60960.31965_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W41_2B/l2b-v27-2026-242/1/level2_2025W41_2B_0614_4D1_spx_l2b-v27-2026-242.fits",
+   "mjd": 60960.31965,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27277
+  },
+  {
+   "file": "60960.31965_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W41_2B/l2b-v27-2026-242/4/level2_2025W41_2B_0614_4D4_spx_l2b-v27-2026-242.fits",
+   "mjd": 60960.31965,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27901
+  },
+  {
+   "file": "60979.19492_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/1/level2_2025W44_2B_0164_1D1_spx_l2b-v27-2026-246.fits",
+   "mjd": 60979.194916,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26975
+  },
+  {
+   "file": "60979.19492_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W44_2B/l2b-v27-2026-246/4/level2_2025W44_2B_0164_1D4_spx_l2b-v27-2026-246.fits",
+   "mjd": 60979.194916,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27408
+  },
+  {
+   "file": "60984.83630_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/1/level2_2025W45_1A_0638_3D1_spx_l2b-v27-2026-247.fits",
+   "mjd": 60984.836297,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27046
+  },
+  {
+   "file": "60984.83630_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W45_1A/l2b-v27-2026-247/4/level2_2025W45_1A_0638_3D4_spx_l2b-v27-2026-247.fits",
+   "mjd": 60984.836297,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 28044
+  },
+  {
+   "file": "60993.25615_D4.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/4/level2_2025W46_2A_0163_3D4_spx_l2b-v27-2026-207.fits",
+   "mjd": 60993.256151,
+   "det": 4,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 22728
+  },
+  {
+   "file": "60993.25764_D1.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W46_2A/l2b-v27-2026-207/1/level2_2025W46_2A_0163_4D1_spx_l2b-v27-2026-207.fits",
+   "mjd": 60993.257643,
+   "det": 1,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 22786
+  },
+  {
+   "file": "61007.58499_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W48_2A/l2b-v27-2026-209/2/level2_2025W48_2A_0243_3D2_spx_l2b-v27-2026-209.fits",
+   "mjd": 61007.584995,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26479
+  },
+  {
+   "file": "61007.58499_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W48_2A/l2b-v27-2026-209/5/level2_2025W48_2A_0243_3D5_spx_l2b-v27-2026-209.fits",
+   "mjd": 61007.584995,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27031
+  },
+  {
+   "file": "61019.87199_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W50_1A/l2b-v27-2026-209/2/level2_2025W50_1A_0661_1D2_spx_l2b-v27-2026-209.fits",
+   "mjd": 61019.871989,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27074
+  },
+  {
+   "file": "61019.87199_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W50_1A/l2b-v27-2026-209/5/level2_2025W50_1A_0661_1D5_spx_l2b-v27-2026-209.fits",
+   "mjd": 61019.871989,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27274
+  },
+  {
+   "file": "61021.50084_D2.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/2/level2_2025W50_2A_0301_3D2_spx_l2b-v27-2026-210.fits",
+   "mjd": 61021.500839,
+   "det": 2,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26948
+  },
+  {
+   "file": "61021.50084_D5.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W50_2A/l2b-v27-2026-210/5/level2_2025W50_2A_0301_3D5_spx_l2b-v27-2026-210.fits",
+   "mjd": 61021.500839,
+   "det": 5,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27134
+  },
+  {
+   "file": "61035.56049_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2025W52_2A/l2b-v27-2026-211/6/level2_2025W52_2A_0227_4D6_spx_l2b-v27-2026-211.fits",
+   "mjd": 61035.56049,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26994
+  },
+  {
+   "file": "61039.15206_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W01_1A/l2b-v27-2026-211/3/level2_2026W01_1A_0257_1D3_spx_l2b-v27-2026-211.fits",
+   "mjd": 61039.152063,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26869
+  },
+  {
+   "file": "61053.41015_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W03_1A/l2b-v27-2026-214/6/level2_2026W03_1A_0304_1D6_spx_l2b-v27-2026-214.fits",
+   "mjd": 61053.410149,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 23599
+  },
+  {
+   "file": "61053.41313_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W03_1A/l2b-v27-2026-214/3/level2_2026W03_1A_0304_3D3_spx_l2b-v27-2026-214.fits",
+   "mjd": 61053.413133,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26007
+  },
+  {
+   "file": "61087.70103_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W08_1A/l2b-v27-2026-227/6/level2_2026W08_1A_0138_3D6_spx_l2b-v27-2026-227.fits",
+   "mjd": 61087.701027,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27544
+  },
+  {
+   "file": "61087.76866_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W08_1A/l2b-v27-2026-227/3/level2_2026W08_1A_0152_1D3_spx_l2b-v27-2026-227.fits",
+   "mjd": 61087.768658,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27958
+  },
+  {
+   "file": "61104.33139_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/3/level2_2026W10_1A_0625_1D3_spx_l2b-v27-2026-229.fits",
+   "mjd": 61104.331389,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26238
+  },
+  {
+   "file": "61104.33288_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W10_1A/l2b-v27-2026-229/6/level2_2026W10_1A_0625_2D6_spx_l2b-v27-2026-229.fits",
+   "mjd": 61104.332881,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26848
+  },
+  {
+   "file": "61120.42926_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/3/level2_2026W12_2A_0350_3D3_spx_l2b-v27-2026-235.fits",
+   "mjd": 61120.429263,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 22772
+  },
+  {
+   "file": "61120.76204_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W12_2A/l2b-v27-2026-235/6/level2_2026W12_2A_0409_1D6_spx_l2b-v27-2026-235.fits",
+   "mjd": 61120.762036,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 27090
+  },
+  {
+   "file": "61138.07688_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W15_1A/l2b-v27-2026-239/3/level2_2026W15_1A_0378_1D3_spx_l2b-v27-2026-239.fits",
+   "mjd": 61138.076878,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26441
+  },
+  {
+   "file": "61138.07688_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W15_1A/l2b-v27-2026-239/6/level2_2026W15_1A_0378_1D6_spx_l2b-v27-2026-239.fits",
+   "mjd": 61138.076878,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26507
+  },
+  {
+   "file": "61154.64138_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/3/level2_2026W17_2A_0255_3D3_spx_l2b-v27-2026-243.fits",
+   "mjd": 61154.641382,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26241
+  },
+  {
+   "file": "61155.11878_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W17_2A/l2b-v27-2026-243/6/level2_2026W17_2A_0360_2D6_spx_l2b-v27-2026-243.fits",
+   "mjd": 61155.118779,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26658
+  },
+  {
+   "file": "61166.25469_D3.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/3/level2_2026W19_1A_0842_2D3_spx_l2b-v27-2026-245.fits",
+   "mjd": 61166.254694,
+   "det": 3,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 26466
+  },
+  {
+   "file": "61166.52625_D6.fits.gz",
+   "uri": "ibe/data/spherex/dr1/level2/2026W19_1A/l2b-v27-2026-245/6/level2_2026W19_1A_0930_3D6_spx_l2b-v27-2026-245.fits",
+   "mjd": 61166.526248,
+   "det": 6,
+   "rel": "dr1",
+   "version": "7.0.5",
+   "bytes": 16486
+  },
+  {
+   "file": "61183.49200_D3.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/3/level2_2026W21_2A_0325_2D3_spx_l2b-v27-2026-268.fits",
+   "mjd": 61183.491997,
+   "det": 3,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 26634
+  },
+  {
+   "file": "61183.49349_D6.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W21_2A/l2b-v27-2026-268/6/level2_2026W21_2A_0325_3D6_spx_l2b-v27-2026-268.fits",
+   "mjd": 61183.49349,
+   "det": 6,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 26772
+  },
+  {
+   "file": "61212.14690_D2.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0573_4D2_spx_l2b-v27-2026-273.fits",
+   "mjd": 61212.146899,
    "det": 2,
    "rel": "qr3",
    "version": "7.0.5",
-   "bytes": 15102
+   "bytes": 27175
   },
   {
-   "file": "61212.61827_D5.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/5/level2_2026W25_2A_0661_1D5_spx_l2b-v27-2026-273.fits",
-   "mjd": 61212.618274,
+   "file": "61212.14690_D5.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/5/level2_2026W25_2A_0573_4D5_spx_l2b-v27-2026-273.fits",
+   "mjd": 61212.146899,
    "det": 5,
    "rel": "qr3",
    "version": "7.0.5",
-   "bytes": 14332
+   "bytes": 27234
   },
   {
-   "file": "61261.48968_D1.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W32_2A/l2b-v27-2026-223/1/level2_2026W32_2A_0672_1D1_spx_l2b-v27-2026-223.fits",
-   "mjd": 61261.489679,
+   "file": "61212.68729_D2.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/2/level2_2026W25_2A_0674_2D2_spx_l2b-v27-2026-273.fits",
+   "mjd": 61212.687291,
+   "det": 2,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 24594
+  },
+  {
+   "file": "61212.68729_D5.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W25_2A/l2b-v27-2026-273/5/level2_2026W25_2A_0674_2D5_spx_l2b-v27-2026-273.fits",
+   "mjd": 61212.687291,
+   "det": 5,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 24069
+  },
+  {
+   "file": "61214.25133_D2.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/2/level2_2026W26_1A_0274_4D2_spx_l2b-v27-2026-273.fits",
+   "mjd": 61214.251334,
+   "det": 2,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 27099
+  },
+  {
+   "file": "61214.25133_D5.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W26_1A/l2b-v27-2026-273/5/level2_2026W26_1A_0274_4D5_spx_l2b-v27-2026-273.fits",
+   "mjd": 61214.251334,
+   "det": 5,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 27580
+  },
+  {
+   "file": "61237.87174_D1.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W29_2A/l2b-v27-2026-277/1/level2_2026W29_2A_0079_2D1_spx_l2b-v27-2026-277.fits",
+   "mjd": 61237.871742,
    "det": 1,
    "rel": "qr3",
    "version": "7.0.5",
-   "bytes": 13822
+   "bytes": 26616
   },
   {
-   "file": "61261.49266_D4.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W32_2A/l2b-v27-2026-223/4/level2_2026W32_2A_0672_3D4_spx_l2b-v27-2026-223.fits",
-   "mjd": 61261.492663,
+   "file": "61237.87174_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W29_2A/l2b-v27-2026-277/4/level2_2026W29_2A_0079_2D4_spx_l2b-v27-2026-277.fits",
+   "mjd": 61237.871742,
    "det": 4,
    "rel": "qr3",
    "version": "7.0.5",
-   "bytes": 16415
+   "bytes": 27116
   },
   {
-   "file": "61285.11460_D4.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W36_1A/l2b-v27-2026-252/4/level2_2026W36_1A_0479_4D4_spx_l2b-v27-2026-252.fits",
-   "mjd": 61285.114597,
-   "det": 4,
-   "rel": "qr3",
-   "version": "7.0.5",
-   "bytes": 15888
-  },
-  {
-   "file": "61286.67496_D1.fits.gz",
-   "uri": "ibe/data/spherex/qr3/level2/2026W36_2A/l2b-v27-2026-254/1/level2_2026W36_2A_0048_1D1_spx_l2b-v27-2026-254.fits",
-   "mjd": 61286.674962,
+   "file": "61256.53703_D1.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W32_1A/l2b-v27-2026-223/1/level2_2026W32_1A_0312_1D1_spx_l2b-v27-2026-223.fits",
+   "mjd": 61256.537027,
    "det": 1,
    "rel": "qr3",
    "version": "7.0.5",
-   "bytes": 14223
+   "bytes": 26695
+  },
+  {
+   "file": "61256.53852_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W32_1A/l2b_retry-v27-2026-223/4/level2_2026W32_1A_0312_2D4_spx_l2b_retry-v27-2026-223.fits",
+   "mjd": 61256.538519,
+   "det": 4,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 28268
+  },
+  {
+   "file": "61264.41002_D1.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W33_1A/l2b-v27-2026-240/1/level2_2026W33_1A_0474_2D1_spx_l2b-v27-2026-240.fits",
+   "mjd": 61264.410022,
+   "det": 1,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 26807
+  },
+  {
+   "file": "61264.41151_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W33_1A/l2b-v27-2026-240/4/level2_2026W33_1A_0474_3D4_spx_l2b-v27-2026-240.fits",
+   "mjd": 61264.411514,
+   "det": 4,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 27758
+  },
+  {
+   "file": "61274.38789_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W34_2A/l2b-v27-2026-243/4/level2_2026W34_2A_0397_1D4_spx_l2b-v27-2026-243.fits",
+   "mjd": 61274.387895,
+   "det": 4,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 28109
+  },
+  {
+   "file": "61283.01183_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W36_1A/l2b-v27-2026-252/4/level2_2026W36_1A_0003_4D4_spx_l2b-v27-2026-252.fits",
+   "mjd": 61283.011832,
+   "det": 4,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 27251
+  },
+  {
+   "file": "61295.16191_D4.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W37_2A/l2b-v27-2026-259/4/level2_2026W37_2A_0343_3D4_spx_l2b-v27-2026-259.fits",
+   "mjd": 61295.161914,
+   "det": 4,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 27599
+  },
+  {
+   "file": "61297.46715_D1.fits.gz",
+   "uri": "ibe/data/spherex/qr3/level2/2026W38_1A/l2b-v27-2026-261/1/level2_2026W38_1A_0091_1D1_spx_l2b-v27-2026-261.fits",
+   "mjd": 61297.467145,
+   "det": 1,
+   "rel": "qr3",
+   "version": "7.0.5",
+   "bytes": 26603
   }
- ]
+ ],
+ "gaia": "gaia.csv",
+ "wise": "wise.csv"
 }
