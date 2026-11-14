@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell/AppShell";
-import { CustomizeTab } from "./components/CustomizeTab/CustomizeTab";
 import { Drawer, type CustomizeValues } from "./components/Drawer/Drawer";
+import { ObjectCard } from "./components/ObjectCard/ObjectCard";
+import { SkyBackdrop } from "./components/SkyBackdrop/SkyBackdrop";
+import { Toolbar } from "./components/Toolbar/Toolbar";
 import { PlaybackBar } from "./components/PlaybackBar/PlaybackBar";
 import { Shortcuts } from "./components/Shortcuts/Shortcuts";
 import { SkyStage } from "./components/SkyStage/SkyStage";
@@ -21,7 +23,8 @@ import { DEFAULTS, parseUrl, toSearch, type Panel, type ViewMode, type ViewState
 const GUIDE_KEY = "spherex-blink.guide-dismissed";
 const DRAWER_W = 340;
 const GUTTER = 16;
-const TAB_W = 44;
+const RAIL_W = 52;
+const CARD_W = 272;
 
 function isTyping(el: EventTarget | null) {
   const t = el as HTMLElement | null;
@@ -43,6 +46,7 @@ export default function App({ source }: { source: ViewSource }) {
   const [toast, setToast] = useState<string | null>(null);
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const mobile = useMediaQuery("(max-width: 768px)");
+  const wide = useMediaQuery("(min-width: 1101px)");
 
   const update = useCallback((patch: Partial<ViewState>) => setUrl((u) => ({ ...u, ...patch })), []);
 
@@ -81,6 +85,16 @@ export default function App({ source }: { source: ViewSource }) {
 
   const pickPreset = (p: Preset) => update({ ra: p.ra, dec: p.dec, fov: p.fov, band: p.band, target: p.id, epoch: 0 });
   const pickCoords = (ra: number, dec: number) => update({ ra, dec, target: null, epoch: 0 });
+  const goHome = () => update({ ra: null, dec: null, target: null, epoch: 0, panel: null, mode: "all" });
+  const toggleOverlay = (k: keyof ViewState["overlays"]) => update({ overlays: { ...url.overlays, [k]: !url.overlays[k] } });
+  const fullscreen = () => {
+    try {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void document.documentElement.requestFullscreen();
+    } catch {
+      // Fullscreen is blocked in some embeds.
+    }
+  };
   const openPanel = (panel: Panel | null) => update({ panel, mode: panel === null && url.mode === "inspect" ? "all" : url.mode });
   const setMode = (mode: ViewMode) => update({ mode, panel: mode === "inspect" ? "details" : url.panel });
 
@@ -114,7 +128,7 @@ export default function App({ source }: { source: ViewSource }) {
   const available = {
     gaia: false, // Needs GET /api/views/{id}/gaia.
     flags: !!view && view.masks.some((m) => m !== null),
-    grid: false, // Needs WCS grid drawing.
+    grid: !!view,
   };
   const overlays = {
     gaia: url.overlays.gaia && available.gaia,
@@ -169,18 +183,24 @@ export default function App({ source }: { source: ViewSource }) {
         .join(" · ")
     : DATA_CREDIT;
 
-  const stageRight = mobile ? GUTTER : drawerOpen ? DRAWER_W + GUTTER * 2 : TAB_W + GUTTER * 2;
+  const inView = load.kind !== "idle";
+  const showCard = inView && wide && url.ra !== null && url.dec !== null;
+  const stageRight = mobile ? GUTTER : drawerOpen ? DRAWER_W + GUTTER * 2 : RAIL_W + GUTTER * 2;
+  const stageLeft = showCard ? CARD_W + GUTTER * 2 : GUTTER;
 
   return (
     <AppShell
       idle={idle}
+      stageLeft={stageLeft}
       stageRight={stageRight}
+      backdrop={<SkyBackdrop dim={inView} />}
       hideBottom={mobile && drawerOpen}
       bottomReserve={mobile && drawerOpen ? Math.min(window.innerHeight * 0.55, 460) : 0}
       top={
         <>
           <TopBar
             activeTarget={url.target}
+            onHome={goHome}
             onPreset={pickPreset}
             onCoords={pickCoords}
             onShare={share}
@@ -202,9 +222,11 @@ export default function App({ source }: { source: ViewSource }) {
       stage={
         <SkyStage
           load={load}
-          targetName={preset?.name ?? null}
+          target={preset ?? null}
           ra={url.ra}
           dec={url.dec}
+          fov={url.fov}
+          showLabel={!drawerOpen}
           index={pb.index}
           mode={url.mode}
           stretch={url.stretch}
@@ -235,7 +257,27 @@ export default function App({ source }: { source: ViewSource }) {
       }
       overlays={
         <>
-          {!drawerOpen && !mobile && <CustomizeTab onOpen={() => openPanel("customize")} />}
+          {showCard && url.ra !== null && url.dec !== null && <ObjectCard target={preset ?? null} position={{ ra: url.ra, dec: url.dec }} />}
+          {!mobile && (
+            <Toolbar
+              groups={[
+                [
+                  { id: "customize", label: "Customize", icon: "sliders", expanded: url.panel === "customize", shortcut: "C", onClick: () => openPanel(url.panel === "customize" ? null : "customize") },
+                  { id: "details", label: "Details", icon: "info", expanded: url.panel === "details", onClick: () => openPanel(url.panel === "details" ? null : "details") },
+                ],
+                [
+                  { id: "grid", label: "RA, Dec grid on the image", icon: "grid", pressed: overlays.grid, disabled: !available.grid, onClick: () => toggleOverlay("grid") },
+                  { id: "gaia", label: "Gaia positions", icon: "gaia", pressed: overlays.gaia, disabled: !available.gaia, onClick: () => toggleOverlay("gaia") },
+                  { id: "flags", label: "Flagged pixels", icon: "flag", pressed: overlays.flags, disabled: !available.flags, onClick: () => toggleOverlay("flags") },
+                  { id: "invert", label: "Invert", icon: "invert", pressed: url.invert, disabled: !view, onClick: () => update({ invert: !url.invert }) },
+                ],
+                [
+                  { id: "home", label: "Whole sky", icon: "globe", onClick: goHome },
+                  { id: "fullscreen", label: "Full screen", icon: "fullscreen", onClick: fullscreen },
+                ],
+              ]}
+            />
+          )}
           {drawerOpen && url.panel && (
             <Drawer
               panel={url.panel}

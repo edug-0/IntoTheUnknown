@@ -7,6 +7,7 @@ import s from "./TopBar.module.css";
 
 interface TopBarProps {
   activeTarget: string | null;
+  onHome: () => void;
   onPreset: (p: Preset) => void;
   onCoords: (ra: number, dec: number) => void;
   onShare: () => void;
@@ -17,11 +18,17 @@ interface TopBarProps {
 
 export function TopBar(props: TopBarProps) {
   return (
-    <GlassPanel pill className={s.bar} role="banner">
-      <h1 className={s.name}>{APP_NAME}</h1>
-      <TargetSearch onPreset={props.onPreset} onCoords={props.onCoords} />
-      <TargetChips active={props.activeTarget} onPick={props.onPreset} />
-      <div className={s.end}>
+    <header className={s.bar}>
+      <button type="button" className={s.brand} onClick={props.onHome} title="Back to the whole sky">
+        <Mark />
+        <span className={s.name}>{APP_NAME}</span>
+      </button>
+      <GlassPanel pill className={s.center}>
+        <TargetSearch onPreset={props.onPreset} onCoords={props.onCoords} />
+        <span className={s.divider} aria-hidden="true" />
+        <TargetChips active={props.activeTarget} onPick={props.onPreset} />
+      </GlassPanel>
+      <GlassPanel pill className={s.end}>
         <GlassButton
           variant="ghost"
           icon="help"
@@ -30,9 +37,27 @@ export function TopBar(props: TopBarProps) {
           aria-controls="shortcuts"
           onClick={props.onShortcuts}
         />
-        <ShareButton onShare={props.onShare} disabled={props.shareDisabled} />
-      </div>
-    </GlassPanel>
+        <GlassButton
+          variant="ghost"
+          icon="share"
+          onClick={props.onShare}
+          disabled={props.shareDisabled}
+          title={props.shareDisabled ? "Pick a target first" : "Copy a link to this view"}
+        >
+          <span className={s.shareLabel}>Share</span>
+        </GlassButton>
+      </GlassPanel>
+    </header>
+  );
+}
+
+/** Crescent over a ring: the timeline's active-epoch marker, reused as the brand mark. */
+function Mark() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+      <circle cx="14" cy="14" r="11" fill="none" stroke="var(--text-1)" strokeOpacity="0.5" strokeWidth="1.2" />
+      <path d="M17.5 5.8a8.8 8.8 0 1 0 0 16.4 7 7 0 0 1 0-16.4z" fill="var(--text-1)" />
+    </svg>
   );
 }
 
@@ -74,14 +99,14 @@ function TargetSearch({ onPreset, onCoords }: Pick<TopBarProps, "onPreset" | "on
             setText(e.target.value);
             if (error) setError(null);
           }}
-          placeholder="Name or RA, Dec"
+          placeholder="Search a name or RA, Dec"
           autoComplete="off"
           spellCheck={false}
+          enterKeyHint="search"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? id : undefined}
         />
       </label>
-      <GlassButton type="submit">Go</GlassButton>
       {error && (
         <p id={id} role="alert" className={s.error}>
           {error}
@@ -95,18 +120,10 @@ function TargetChips({ active, onPick }: { active: string | null; onPick: (p: Pr
   return (
     <div className={s.chips} role="group" aria-label="Test targets">
       {PRESETS.map((p) => (
-        <Chip key={p.id} pressed={active === p.id} onClick={() => onPick(p)} title={p.name}>
+        <Chip key={p.id} pressed={active === p.id} onClick={() => onPick(p)} title={p.name} className={s.chip}>
           {p.short}
         </Chip>
       ))}
     </div>
-  );
-}
-
-function ShareButton({ onShare, disabled }: { onShare: () => void; disabled: boolean }) {
-  return (
-    <GlassButton icon="share" onClick={onShare} disabled={disabled} title={disabled ? "Pick a target first" : "Copy a link to this view"}>
-      <span className={s.shareLabel}>Share</span>
-    </GlassButton>
   );
 }

@@ -13,6 +13,12 @@ const PATHS = {
   retry: "M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4",
   info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v6M12 7.5h.01",
   chevron: "M9 6l6 6-6 6",
+  grid: "M3 9h18M3 15h18M9 3c-2 6-2 12 0 18M15 3c2 6 2 12 0 18M3 3h18v18H3z",
+  gaia: "M12 4v3M12 17v3M4 12h3M17 12h3M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  flag: "M5 21V4M5 4h11l-2 4 2 4H5",
+  invert: "M12 21a9 9 0 1 0 0-18v18zM12 3a9 9 0 0 1 0 18",
+  fullscreen: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5",
+  globe: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z",
 } as const;
 
 export type IconName = keyof typeof PATHS;

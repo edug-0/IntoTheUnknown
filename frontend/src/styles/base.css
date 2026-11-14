@@ -56,6 +56,12 @@ button:disabled {
   color: var(--text-2);
 }
 
+.display {
+  font-weight: var(--font-display-weight);
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

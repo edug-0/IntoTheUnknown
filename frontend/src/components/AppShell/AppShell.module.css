@@ -9,7 +9,7 @@
 .stage {
   position: absolute;
   inset: 0;
-  padding: var(--chrome-top) var(--stage-right, var(--gutter)) var(--chrome-bottom) var(--gutter);
+  padding: var(--chrome-top) var(--stage-right, var(--gutter)) var(--chrome-bottom) var(--stage-left, var(--gutter));
   transition: padding var(--dur) var(--ease);
 }
 
@@ -50,12 +50,19 @@
   transition: opacity 220ms var(--ease);
 }
 
-.shell[data-idle="true"] .chrome {
+.shell [data-fade] {
+  transition: opacity 220ms var(--ease);
+}
+
+.shell[data-idle="true"] .chrome,
+.shell[data-idle="true"] [data-fade] {
   opacity: 0.15;
 }
 
 .shell[data-idle="true"] .chrome:hover,
-.shell[data-idle="true"] .chrome:has(:focus-visible) {
+.shell[data-idle="true"] .chrome:has(:focus-visible),
+.shell[data-idle="true"] [data-fade]:hover,
+.shell[data-idle="true"] [data-fade]:has(:focus-visible) {
   opacity: 1;
 }
 

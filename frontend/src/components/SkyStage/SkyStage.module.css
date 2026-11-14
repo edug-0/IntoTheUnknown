@@ -2,42 +2,81 @@
   position: relative;
   height: 100%;
   display: grid;
-  place-items: safe center;
-  overflow-y: auto;
-  scrollbar-width: none;
+  place-items: center;
+  container-type: size;
 }
 
-/* The frame column: HUD row, square image, caption row. Sized to the space between the chrome. */
-.column {
-  --hud-h: 28px;
-  --side: min(100%, calc(100dvh - var(--chrome-top) - var(--chrome-bottom) - var(--hud-h) * 2));
-  display: grid;
-  grid-template-rows: var(--hud-h) auto var(--hud-h);
-  width: var(--side);
-  max-width: 100%;
+/* Fixed full-viewport layer: RA/Dec grid across the sky, viewfinder, leader line. */
+.sky {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
 }
 
-.hud {
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  column-gap: 12px;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text-2);
+.gridLine {
+  fill: none;
+  stroke: var(--grid-line);
+  stroke-width: 1;
+}
+
+.gridLabel {
+  fill: var(--text-2);
+  font-size: 11px;
   letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
 }
 
-.hudStrong {
-  color: var(--text-1);
+.gridOnImage {
+  fill: none;
+  stroke: var(--grid-line-strong);
+  stroke-width: 1;
 }
 
-.hudSep {
-  margin: 0 8px;
+.ticks {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1;
+}
+
+.brackets {
+  fill: none;
+  stroke: var(--text-1);
+  stroke-opacity: 0.75;
+  stroke-width: 1.5;
+}
+
+.leader {
+  fill: var(--text-1);
+  stroke: var(--text-1);
+  stroke-opacity: 0.6;
+  stroke-width: 1;
+}
+
+.leader path {
+  fill: none;
+}
+
+/* Frame column: label row, square image, grid-label row. */
+.column {
+  --row: 32px;
+  --side: min(calc(100cqw - 150px), calc(100cqh - var(--row) * 2 - 12px));
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: var(--row) auto var(--row);
+  width: var(--side);
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
   color: var(--text-2);
+  white-space: nowrap;
+  padding-bottom: 12px;
 }
 
 .frame {
@@ -45,9 +84,7 @@
   width: 100%;
   aspect-ratio: 1;
   background: var(--space-1);
-  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 0 0 1px var(--glass-border);
 }
 
 .canvas,
@@ -64,24 +101,50 @@
 
 .overlay {
   pointer-events: none;
-  overflow: visible;
 }
 
-.caption {
-  display: flex;
-  white-space: nowrap;
-  overflow: hidden;
-  justify-content: space-between;
+.scale {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 12px;
+  gap: 8px;
+}
+
+.scaleBar {
+  display: inline-block;
+  height: 6px;
+  border: 1px solid var(--text-2);
+  border-top: 0;
+}
+
+.compass {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 28px;
   color: var(--text-2);
+}
+
+.compassN,
+.compassE {
+  position: absolute;
+  font-size: 10px;
+  color: var(--text-1);
+}
+
+.compassN {
+  right: 6px;
+  top: -10px;
+}
+
+.compassE {
+  left: -10px;
+  bottom: -1px;
 }
 
 .legend {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .swatchNeg,
@@ -90,7 +153,7 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  margin-right: 4px;
+  margin-right: 6px;
   vertical-align: -1px;
 }
 
@@ -102,124 +165,91 @@
   background: var(--mover);
 }
 
-/* Context inset slot, bottom-left of the stage. An outline, not glass: it is not a control. */
-.inset {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 132px;
-  aspect-ratio: 1;
+/* Target label at the end of the leader line, Eyes style. */
+.targetLabel {
+  position: fixed;
+  z-index: 2;
   display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 12px;
-  border: 1px dashed var(--glass-border);
-  border-radius: var(--radius-chip);
+  gap: 6px;
+  max-width: 260px;
+  translate: 0 -14px;
+  pointer-events: none;
+}
+
+.targetName {
+  font-size: 26px;
+  color: var(--text-1);
+}
+
+.targetCoords {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   color: var(--text-2);
-  font-size: 12px;
 }
 
-@media (max-width: 1100px) {
-  .inset {
-    display: none;
-  }
+.targetCoords b {
+  font-weight: 500;
+  color: var(--text-1);
 }
 
-@media (max-width: 768px) {
-  .column {
-    --hud-h: 40px;
-  }
+.targetSub {
+  font-size: 13px;
+  color: var(--text-2);
+}
 
-  .hud {
-    font-size: 11px;
-  }
+.sourceTag {
+  justify-self: start;
+  padding: 1px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-1);
+}
 
-  .empty h2 {
-    font-size: 22px;
-  }
+/* Home: the whole sky. */
+.home {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-items: center;
+  justify-items: center;
+  gap: 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
 
-  .presetGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.homeText {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  max-width: 620px;
+}
 
-  .presetButton {
-    padding: 12px;
-  }
+.homeTitle {
+  margin: 0;
+  font-size: clamp(30px, 4.2vw, 52px);
+}
+
+.homeSub {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.homeMap {
+  width: min(100%, 1040px, calc((100dvh - var(--chrome-top) - var(--chrome-bottom) - 150px) * 1.9));
+  padding: 0 12px;
 }
 
 /* States */
-.card {
-  max-width: 440px;
-  padding: 28px;
-  text-align: center;
-}
-
-.card h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.card p {
-  margin: 0 0 18px;
-  color: var(--text-2);
-}
-
-.code {
-  display: block;
-  margin-bottom: 18px;
-  font-size: 12px;
-  color: var(--flag);
-}
-
-.empty {
-  display: grid;
-  justify-items: center;
-  gap: 20px;
-  max-width: 760px;
-  text-align: center;
-}
-
-.empty h2 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.empty p {
-  margin: 0;
-  color: var(--text-2);
-}
-
-.presetGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
-  gap: 10px;
-  width: 100%;
-}
-
-.presetButton {
-  display: grid;
-  gap: 4px;
-  justify-items: start;
-  padding: 16px;
-  border-radius: var(--radius-panel);
-  text-align: left;
-  border: 1px solid var(--glass-border);
-  color: var(--text-1);
-  transition:
-    border-color var(--dur) var(--ease),
-    background-color var(--dur) var(--ease);
-}
-
-.presetButton:hover {
-  border-color: var(--accent);
-}
-
-.presetName {
-  font-weight: 600;
-  font-size: 15px;
+.loading {
+  position: absolute;
+  inset: 0;
 }
 
 .skeleton {
@@ -249,9 +279,41 @@
   color: var(--text-2);
 }
 
-.sourceTag {
-  padding: 1px 8px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-pill);
-  color: var(--text-1);
+.card {
+  max-width: 440px;
+  padding: 28px;
+  text-align: center;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.card p {
+  margin: 0 0 18px;
+  color: var(--text-2);
+}
+
+.code {
+  display: block;
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: var(--flag);
+}
+
+@media (max-width: 768px) {
+  .column {
+    --side: min(calc(100cqw - 70px), calc(100cqh - var(--row) * 2 - 8px));
+  }
+
+  .gridLabel {
+    display: none;
+  }
+
+  .homeMap {
+    width: 100%;
+    padding: 0;
+  }
 }

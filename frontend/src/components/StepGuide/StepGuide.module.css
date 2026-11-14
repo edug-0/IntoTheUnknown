@@ -2,8 +2,11 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 4px 4px 14px;
+  padding: 0 0 0 14px;
   font-size: 13px;
+  border-radius: var(--radius-pill);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
 }
 
 .list {

@@ -1,4 +1,4 @@
-import { GlassButton, GlassPanel, Icon } from "../glass";
+import { GlassButton, Icon } from "../glass";
 import s from "./StepGuide.module.css";
 
 const STEPS = ["Pick a target", "Press Play", "Watch for the dot that moves"] as const;
@@ -12,7 +12,7 @@ interface StepGuideProps {
 export function StepGuide({ done, onDismiss }: StepGuideProps) {
   const current = done.findIndex((d) => !d);
   return (
-    <GlassPanel pill className={s.guide} aria-label="Getting started">
+    <div className={s.guide} role="group" aria-label="Getting started">
       <ol className={s.list}>
         {STEPS.map((label, i) => {
           const state = done[i] ? "done" : i === current ? "current" : "next";
@@ -35,6 +35,6 @@ export function StepGuide({ done, onDismiss }: StepGuideProps) {
         })}
       </ol>
       <GlassButton variant="ghost" icon="close" label="Hide the getting started steps" onClick={onDismiss} />
-    </GlassPanel>
+    </div>
   );
 }
