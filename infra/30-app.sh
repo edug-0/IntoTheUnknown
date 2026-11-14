@@ -4,14 +4,17 @@
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
 cd "$INFRA_DIR/.."
-[[ ${1:---plan} == --plan || ${1:-} == --apply ]] || die 'Usage: 30-app.sh [--plan|--apply]'
+MODE=${1:---plan}
+[[ $MODE == --plan || $MODE == --apply || $MODE == --deploy-only ]] || die 'Usage: 30-app.sh [--plan|--apply|--deploy-only]'
 SOURCE_REF=${SOURCE_REF:-origin/main}
 SOURCE_SHA=$(git rev-parse --verify "${SOURCE_REF}^{commit}")
 TAG=${SOURCE_SHA:0:12}
 IMAGE="$ACR.azurecr.io/spherex-blink:$TAG"
+BUILD_LINE='ACR remote Linux/amd64 build from git archive (tracked files only)'
+[[ $MODE != --deploy-only ]] || BUILD_LINE='Use an existing, digest-verified image; skip ACR Tasks'
 cat <<EOF
 Source commit: $SOURCE_SHA
-Build: ACR remote Linux/amd64 build from git archive (tracked files only)
+Build: $BUILD_LINE
 Image: $IMAGE
 Target: $RG / $CAE / $API
 App: one React + FastAPI container, port 8000, 1 vCPU / 2 GiB
@@ -20,7 +23,7 @@ Identity: system-assigned, AcrPull on $ACR only
 Cache: local ephemeral files; golden snapshots are bundled in the image
 Watcher, Blob-backed render cache and Application Insights SDK wiring remain separate work.
 EOF
-[[ ${1:---plan} == --apply ]] || exit 0
+[[ $MODE != --plan ]] || exit 0
 
 require_az
 exists azs group show -n "$RG" || die 'Run reviewed 10-core.sh first: project resource group is absent.'
@@ -31,6 +34,7 @@ ARM_AUTH=$(azsq acr config authentication-as-arm show -r "$ACR" --query status -
 git cat-file -e "$SOURCE_SHA:.dockerignore" || die 'Selected source must contain the reviewed .dockerignore.'
 git cat-file -e "$SOURCE_SHA:frontend/public/golden/barnard/manifest.json" || die 'Selected source must include the reviewed golden snapshots.'
 
+if [[ $MODE == --apply ]]; then
 # git archive excludes all ignored/untracked files. Keep the archive outside the upload folder.
 STAGING=$(mktemp -d)
 trap 'rm -f "$STAGING/source.tar"' EXIT
@@ -52,6 +56,12 @@ while :; do
   (( SECONDS < DEADLINE )) || die "Timed out waiting for ACR build $RUN_ID; no app update attempted."
   sleep 5
 done
+else
+  DIGEST=$(azsq acr repository show -n "$ACR" --image "spherex-blink:$TAG" --query digest -o tsv) ||
+    die 'The selected image is absent. Build it with the approved GitHub workflow first.'
+  [[ $DIGEST =~ ^sha256:[0-9a-f]{64}$ ]] || die 'Registry returned an invalid image digest; no app update attempted.'
+  info "Using existing image $IMAGE ($DIGEST); no ACR Tasks build requested."
+fi
 
 if ! exists azs containerapp show -g "$RG" -n "$API"; then
   # Bootstrap the system identity with a public image before granting registry access.

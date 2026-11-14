@@ -1,16 +1,16 @@
 # Azure deployment
 
-The production Dockerfile builds React and runs FastAPI on port 8000. The default host is one Azure Container App serving the UI, `/api`, `/frames` and bundled `/golden` snapshots from the same origin. No Azure resources have been created by this PR; offline tests do not prove a live deployment.
+The production Dockerfile builds React and runs FastAPI on port 8000. The default host is one Azure Container App serving the UI, `/api`, `/frames` and bundled `/golden` snapshots from the same origin. Live core provisioning was completed on 2026-11-14: `rg-planetx`, storage, monitoring, ACR and the Container Apps environment exist in westus. Application deployment is tracked separately below; offline script tests alone do not prove a live deployment. See [BLOB-HANDOFF.md](BLOB-HANDOFF.md) for the tested cache endpoint and access requirements.
 
 ## Resources and limits
 
 | Resource | Purpose | Integration |
 |---|---|---|
-| ACR + Container Apps environment + app | Build and host the combined app | Scripts prepared; live deployment unverified |
+| ACR + Container Apps environment + app | Build and host the combined app | Registry/environment created; ACR Tasks denied; GitHub build fallback prepared |
 | System-assigned identity | Pull private images with registry-scoped AcrPull | Configured by `30-app.sh`; no registry password |
-| Log Analytics | Container platform logs | Environment template prepared |
-| Application Insights | Future application telemetry | Resource prepared; Python instrumentation pending |
-| Blob Storage | Future persistent render cache and watcher state | Resource prepared; backend currently uses local files |
+| Log Analytics | Container platform logs | Workspace created and linked to the environment |
+| Application Insights | Future application telemetry | Resource created; Python instrumentation pending |
+| Blob Storage | Persistent render cache and watcher state | Live account and containers verified; backend integration belongs to #12 |
 | Functions | Future catalog watcher | Deployment and refresh API integration pending |
 | Blob website / Static Web Apps | Alternative frontend hosts | Off by default; SWA blocked by recorded region policy |
 
@@ -57,5 +57,15 @@ Set `FRONTEND_HOST=blob` explicitly to enable the storage static website, or `FR
 ## Cost and checks
 
 ACR, builds, monitoring, storage, network and compute can incur charges. The $20 budget is an email alert, not a spending cap. Azure for Students may reject the budget API; exit 3 requires checking the Azure Sponsorships credit portal instead. No live cost or remaining-credit estimate is claimed.
+
+The live budget API accepted `budget-planetx` on 2026-11-14: $20 monthly on `rg-planetx`, actual-cost email alerts at 50/80/100 percent to the requested address. Amount, period and enabled recipients/thresholds were verified in the API response. Cost reporting can lag; this does not measure remaining student credit.
+
+## ACR Tasks restriction and approved build fallback
+
+The first live `az acr build` failed with `TasksOperationsNotAllowed`. No app revision was deployed. No local Docker/Podman builder is installed. The human approved `.github/workflows/build-image.yml` as a fallback: manually dispatch it with a full reviewed main SHA; it validates that the commit is on main, builds the root Dockerfile on a GitHub runner and pushes the commit-tagged image to the private registry. Repository permissions are `contents: read`; it has no Azure deployment step.
+
+Just before dispatch, an authorized operator obtains a short-lived registry token using `az acr login --expose-token` and passes it **directly through stdin** to `gh secret set ACR_BUILD_TOKEN`. Never print the token, put it in a body/argument/file, or use the ACR admin password. Remove the GitHub secret after the run, including a failed run. Tokens expire after about three hours; this is a manual bootstrap route, not unattended CI authentication. [Microsoft's token login documentation](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication#use-az-acr-login-without-docker-daemon).
+
+After a successful workflow, `SOURCE_REF=<same-full-sha> bash infra/30-app.sh --deploy-only` checks the existing image digest and deploys with the original managed-identity flow, without requesting another ACR build. The workflow must be merged before its manual dispatch is available. OIDC remains a separate automation improvement.
 
 `check-scripts.sh` checks syntax, subscription/ARM URL scoping and workspace-key avoidance. `tests/run.sh` uses fake Azure/GitHub commands and fixture identities only, checking wrong-subscription/tenant refusal, policy, configuration, OIDC and budget behavior. Exit codes: 0 success, 1 error, 2 OIDC permission denial, 3 budget refusal, 4 unconfirmed policy.

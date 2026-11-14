@@ -116,6 +116,12 @@ case "$a" in
   "acr show -g rg-planetx -n acrplanetxitu7q4 --query sku.name -o tsv") echo "${FAKE_ACR_SKU:-Standard}" ;;
   "acr show -g rg-planetx -n acrplanetxitu7q4 --query loginServer -o tsv") echo "acrplanetxitu7q4.azurecr.io" ;;
   "acr config authentication-as-arm show -r acrplanetxitu7q4 --query status -o tsv") echo "${FAKE_ARM_AUTH:-enabled}" ;;
+  "acr repository show -n acrplanetxitu7q4 --image "*)
+    [[ ${FAKE_IMAGE:-present} != missing ]] || exit 3
+    echo "${FAKE_DIGEST:-sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ;;
+  "containerapp identity show -g rg-planetx -n ca-planetx-api --query principalId -o tsv") echo 'bbbbbbbb-1111-2222-3333-cccccccccccc' ;;
+  "containerapp show -g rg-planetx -n ca-planetx-api --query properties.configuration.ingress.fqdn -o tsv") echo 'app.test.invalid' ;;
+  "containerapp identity assign "* | "containerapp registry set "* | "containerapp ingress enable "*) exit 0 ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query location -o tsv") echo "West US" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.destination -o tsv") echo "log-analytics" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId -o tsv") echo "${FAKE_CAE_WS:-cust-id}" ;;

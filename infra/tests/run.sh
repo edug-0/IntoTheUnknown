@@ -23,6 +23,12 @@ run_case() { # label expected-exit script [ENV=value ...]
     export FAKE_TENANT=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
     printf 'AZ_SUBSCRIPTION_ID=%s\nAZ_TENANT_ID=%s\n' "$FAKE_SUB_ID" "$FAKE_TENANT" >"$AZ_ENV_LOCAL"
     for setting in "$@"; do export "$setting"; done
+    curl() {
+      [[ $* == *https://app.test.invalid/api/health* ]] || { echo 'Unexpected curl URL in offline test' >&2; return 97; }
+      printf '%s\n' "$*" >> "$FAKE_LOG.curl"
+      printf '{"ok":true}\n'
+    }
+    export -f curl
     cd "$REPO"
     local args=()
     [[ $script != 30-app.sh ]] || args+=("${APP_MODE:---plan}")
@@ -103,4 +109,15 @@ lacks '^acr build|^containerapp create' calls
 run_case 'app apply refuses disabled ARM tokens before build' 1 30-app.sh APP_MODE=--apply FAKE_EXISTS=yes FAKE_ARM_AUTH=disabled
 has 'ARM-token authentication must be enabled' output
 lacks '^acr build|^containerapp create' calls
+run_case 'deploy-only refuses a missing image without building or creating an app' 1 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes FAKE_IMAGE=missing
+has 'selected image is absent' output
+lacks '^acr build|^containerapp create' calls
+run_case 'deploy-only refuses malformed registry digest' 1 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes FAKE_DIGEST=invalid
+has 'invalid image digest' output
+lacks '^acr build|^containerapp update' calls
+run_case 'deploy-only updates existing app with managed identity and verifies health' 0 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes
+lacks '^acr build|^containerapp create' calls
+has '^containerapp registry set .*--identity system' calls
+has '^containerapp ingress enable .*--target-port 8000' calls
+has 'https://app.test.invalid/api/health' calls.curl
 printf '\n%s offline scenarios passed; no Azure or GitHub requests made.\n' "$passed"
