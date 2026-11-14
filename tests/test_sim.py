@@ -76,7 +76,7 @@ with sync_playwright() as p:
         pg.click(f"#dispSeg button[data-v={mode}]"); pg.wait_for_timeout(300); pg.screenshot(path=f"{a.out}/mode_{mode}.png")
     pg.click("#dispSeg button[data-v=gray]")
     pg.click("#tabs button[data-t=lc]"); pg.wait_for_timeout(300); pg.screenshot(path=f"{a.out}/lightcurve.png")
-    pg.click("nav.top button[data-about=project]"); pg.wait_for_timeout(300); pg.screenshot(path=f"{a.out}/about.png")
+    pg.click("header nav button[data-about=project]"); pg.wait_for_timeout(300); pg.screenshot(path=f"{a.out}/about.png")
     b.close()
 
 print("console errors:", errors or "none")

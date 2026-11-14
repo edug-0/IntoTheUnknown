@@ -8,146 +8,172 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23070b1c'/%3E%3Cpath d='M16 5l2.2 8.8L27 16l-8.8 2.2L16 27l-2.2-8.8L5 16l8.8-2.2z' fill='%23ffd27a'/%3E%3C/svg%3E">
 <style>
 :root{
-  --void:#03050d; --night:#070b1c; --dusk:#101a3d;
-  --panel:rgba(10,15,34,.80); --panel-solid:#0b1124; --panel2:rgba(22,31,64,.75); --line:rgba(150,175,255,.14); --line2:rgba(150,175,255,.28);
-  --text:#e6ebff; --dim:#97a3c7; --faint:#66719a;
+  --void:#03050d; --night:#070b1c;
+  --panel:rgba(10,15,34,.82); --panel-solid:#0b1124; --panel2:rgba(22,31,64,.75); --line:rgba(150,175,255,.14); --line2:rgba(150,175,255,.28);
+  --text:#e6ebff; --dim:#9aa6ca; --faint:#6a76a0;
   --star:#ffd27a; --nebula:#7fd8ff; --violet:#b69cff; --good:#6ee7a8; --bad:#ff7b7b;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --r:14px; --rs:9px;
+  --r:16px; --rs:10px;
+  --dome: min(calc(100vw - 90px), calc(100vh - 290px), 980px);   /* dome + player fit on one laptop screen */
 }
 *{box-sizing:border-box}
-html,body{margin:0;color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html,body{margin:0;color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body{background:var(--void);min-height:100vh}
 #sky{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
 .app{position:relative;z-index:1}
 a{color:var(--nebula)}
 code{font:12px var(--mono);background:rgba(127,216,255,.08);padding:1px 5px;border-radius:5px}
+button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:var(--rs);padding:8px 13px;cursor:pointer;font:inherit;font-size:14px}
+button:hover{border-color:var(--line2)}
+button.primary{background:var(--star);color:#1d1404;border-color:var(--star);font-weight:650}
+input:focus,select:focus,button:focus-visible{outline:2px solid rgba(127,216,255,.55);outline-offset:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(4px)}
+.note{font-size:13px;color:var(--dim)}
+.kbd{font:11px var(--mono);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--text)}
 
-/* header */
-header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);background:rgba(5,8,20,.65);backdrop-filter:blur(6px);position:sticky;top:0;z-index:5}
+/* ---------- header ---------- */
+header{display:flex;align-items:center;gap:14px;padding:10px 20px;background:rgba(3,5,13,.55);backdrop-filter:blur(6px);position:sticky;top:0;z-index:20;border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
-.brand svg{flex:0 0 auto}
-.brand h1{font-size:18px;margin:0;letter-spacing:.4px;font-weight:650}
+.brand h1{font-size:19px;margin:0;letter-spacing:.4px;font-weight:650}
 .brand h1 b{color:var(--star);font-weight:700}
-.tagline{color:var(--dim);font-size:12.5px;max-width:420px}
 .spacer{flex:1}
-nav.top{display:flex;gap:6px}
-nav.top button{background:transparent;border:1px solid transparent;color:var(--dim);padding:6px 12px;border-radius:99px;font-size:13px}
-nav.top button:hover{color:var(--text);border-color:var(--line2)}
-#modeBadge{font:600 11px var(--mono);padding:4px 10px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
+header nav{display:flex;gap:6px;align-items:center}
+header nav button{background:transparent;border-color:transparent;color:var(--dim);border-radius:99px;font-size:14px}
+header nav button:hover{color:var(--text);border-color:var(--line2)}
+#advBtn.on{color:var(--nebula);border-color:rgba(127,216,255,.45)}
+#modeBadge{font:600 11px var(--mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);white-space:nowrap;cursor:pointer;background:transparent}
 #modeBadge.live{color:var(--good);border-color:rgba(110,231,168,.4)}
 #modeBadge.demo{color:var(--nebula);border-color:rgba(127,216,255,.4)}
 #modeBadge.sim{color:var(--star);border-color:rgba(255,210,122,.4)}
 
-/* layout */
-main{display:grid;grid-template-columns:320px minmax(420px,1fr) 400px;gap:16px;padding:16px;max-width:1700px;margin:0 auto}
-body.embed main{grid-template-columns:minmax(300px,1fr);padding:0}
-body.embed aside, body.embed #right, body.embed header, body.embed #caption{display:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);backdrop-filter:blur(4px)}
-aside,#right{padding:16px;align-self:start;position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto}
-aside::-webkit-scrollbar,#right::-webkit-scrollbar{width:8px}
-aside::-webkit-scrollbar-thumb,#right::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px}
-
-.step{display:flex;align-items:center;gap:9px;margin:18px 0 10px}
-.step:first-child{margin-top:0}
-.step .n{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 11px var(--mono);color:var(--night);background:var(--star);flex:0 0 auto}
-.step h2{font-size:13px;margin:0;letter-spacing:.3px;font-weight:650}
-.step small{color:var(--faint);font-size:11.5px;margin-left:auto}
-h3{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--dim);margin:16px 0 8px;font-weight:600}
-label{display:block;font-size:12px;color:var(--dim);margin:8px 0 4px}
-input[type=text],input[type=number],select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:var(--rs);padding:7px 9px;font:13px var(--mono)}
-input:focus,select:focus,button:focus-visible{outline:2px solid rgba(127,216,255,.5);outline-offset:1px}
-input[type=range]{width:100%;accent-color:var(--star)}
-.row{display:flex;gap:8px}.row>*{flex:1}
-button{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:var(--rs);padding:7px 11px;cursor:pointer;font:inherit;font-size:13px}
-button:hover{border-color:var(--line2)}
-button.primary{background:var(--star);color:#1d1404;border-color:var(--star);font-weight:650}
-button.primary:hover{filter:brightness(1.07)}
-.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.preset{text-align:left;padding:8px 10px;display:flex;flex-direction:column;gap:1px;line-height:1.25}
-.preset b{font-size:13px;font-weight:600}
-.preset span{font-size:11px;color:var(--dim)}
-.preset.on{border-color:var(--star);background:rgba(255,210,122,.08)}
+/* ---------- main column ---------- */
+main{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 16px 40px}
+.intro{text-align:center;max-width:760px}
+.intro h2{margin:0;font-size:21px;font-weight:600;letter-spacing:.2px}
+.intro p{margin:0;color:var(--dim)}
+.presets{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:980px}
+.preset{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.25;padding:9px 15px;border-radius:14px;background:rgba(10,15,34,.7);text-align:left;min-width:150px}
+.preset b{font-size:14.5px;font-weight:600}
+.preset span{font-size:12px;color:var(--dim)}
+.preset.on{border-color:var(--star);background:rgba(255,210,122,.1);box-shadow:0 0 18px rgba(255,210,122,.15)}
 .preset.on b{color:var(--star)}
-.preset .pk{font:10px var(--mono);color:var(--nebula)}
-.dets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.dets label{display:flex;gap:6px;align-items:center;margin:0;color:var(--text);font:12px var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 7px;cursor:pointer}
-.dets label:has(input:checked){border-color:rgba(127,216,255,.45)}
-.dets small{color:var(--dim);font-size:10.5px}
-.chk{display:flex;gap:7px;align-items:center;color:var(--text);font-size:13px;margin:5px 0}
-.chk input{margin:0;accent-color:var(--nebula)}
-.chk i{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor}
-.seg{display:flex;border:1px solid var(--line);border-radius:var(--rs);overflow:hidden;background:var(--panel2)}
-.seg button{flex:1;border:0;border-radius:0;font-size:12px;padding:6px 4px;background:transparent}
-.seg button+button{border-left:1px solid var(--line)}
-.seg button.on{background:rgba(127,216,255,.14);color:var(--nebula);font-weight:600}
-.note{font-size:12px;color:var(--dim)}
-details>summary{cursor:pointer;color:var(--dim);font-size:12.5px;margin:10px 0 4px;list-style:none}
-details>summary::before{content:"▸ ";color:var(--faint)}
-details[open]>summary::before{content:"▾ "}
+.preset.custom{border-style:dashed}
 
-/* centre */
-#center{display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0}
-.w{width:min(100%,660px)}
-#stage{position:relative;aspect-ratio:1;background:#000;border:1px solid var(--line2);border-radius:var(--r);overflow:hidden;box-shadow:0 0 0 6px rgba(127,216,255,.03),0 20px 60px rgba(0,0,0,.55)}
+/* ---------- the dome ---------- */
+.domewrap{position:relative;width:var(--dome);aspect-ratio:1;margin:26px 0 22px}
+#stage{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:#000;
+  box-shadow:0 0 0 1px rgba(150,175,255,.35), 0 0 0 10px rgba(127,216,255,.05), 0 0 80px 10px rgba(80,120,255,.18), 0 30px 90px rgba(0,0,0,.6)}
+#stage::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 0 70px 18px rgba(0,0,0,.85)}
 #stage canvas{position:absolute;inset:0;width:100%;height:100%}
 #img{image-rendering:pixelated}
 #img.smooth{image-rendering:auto}
 #ov{cursor:crosshair}
-#hud{position:absolute;left:10px;top:8px;font:12px var(--mono);color:#fff;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none}
-#hud2{position:absolute;right:10px;bottom:8px;font:11px var(--mono);color:#d8e0ff;text-shadow:0 0 3px #000;pointer-events:none;text-align:right}
-#empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;color:var(--dim);pointer-events:none}
-#empty b{color:var(--text);font-size:16px;display:block;margin-bottom:6px}
-#spinner{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px;border-radius:50%;border:3px solid rgba(127,216,255,.15);border-top-color:var(--nebula);animation:spin 1s linear infinite;display:none}
+.rim{position:absolute;inset:-34px;pointer-events:none}
+.rim svg{width:100%;height:100%;overflow:visible}
+.rim text{fill:#c9d4ff;font:600 15px var(--mono);text-anchor:middle;dominant-baseline:middle}
+.rim text.n{fill:var(--star)}
+#hud{position:absolute;left:50%;top:7%;transform:translateX(-50%);font:13px var(--mono);color:#fff;text-shadow:0 0 6px #000,0 0 2px #000;pointer-events:none;text-align:center;white-space:nowrap}
+#hud2{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);font:12px var(--mono);color:#d8e0ff;text-shadow:0 0 4px #000;pointer-events:none;text-align:center;white-space:nowrap}
+#empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:18%;color:var(--dim);pointer-events:none;border-radius:50%}
+#empty b{color:var(--text);font-size:20px;display:block;margin-bottom:6px}
+#spinner{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;border:3px solid rgba(127,216,255,.15);border-top-color:var(--nebula);animation:spin 1s linear infinite;display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
-#banner{font-size:12.5px;padding:9px 12px;border-radius:var(--rs);border:1px solid rgba(255,210,122,.35);background:rgba(60,44,12,.7);color:#ffe4ad;display:none}
-#banner.err{border-color:rgba(255,123,123,.4);background:rgba(60,16,16,.7);color:#ffc4c4}
-#banner.info{border-color:rgba(127,216,255,.35);background:rgba(12,38,60,.7);color:#cdefff}
-#player{display:flex;gap:8px;align-items:center;padding:8px 10px}
-#player .grow{flex:1;display:flex;align-items:center;gap:8px}
-#player input[type=range]{flex:1}
-#playBtn{width:44px;height:44px;border-radius:50%;font-size:16px;padding:0;background:var(--star);color:#1d1404;border:0}
-#timeline{display:flex;gap:4px;flex-wrap:wrap}
-#timeline button{font:11px var(--mono);padding:4px 8px;border-radius:7px}
-#timeline button.cur{border-color:var(--star);color:var(--star);background:rgba(255,210,122,.08)}
+
+/* ---------- controls under the dome ---------- */
+.w{width:min(100%,900px)}
+#banner{font-size:13.5px;padding:10px 14px;border-radius:var(--rs);border:1px solid rgba(255,210,122,.35);background:rgba(60,44,12,.75);color:#ffe4ad;display:none}
+#banner.err{border-color:rgba(255,123,123,.4);background:rgba(60,16,16,.75);color:#ffc4c4}
+#banner.info{border-color:rgba(127,216,255,.35);background:rgba(12,38,60,.75);color:#cdefff}
+#player{display:flex;gap:10px;align-items:center;padding:10px 14px;position:sticky;bottom:12px;z-index:10;background:rgba(9,14,32,.92);box-shadow:0 10px 40px rgba(0,0,0,.5)}  /* always in reach under the big dome */
+#player .grow{flex:1;display:flex;align-items:center;gap:10px;min-width:120px}
+#player input[type=range]{flex:1;accent-color:var(--star)}
+#playBtn{width:56px;height:56px;border-radius:50%;font-size:20px;padding:0;background:var(--star);color:#1d1404;border:0;box-shadow:0 0 22px rgba(255,210,122,.35)}
+#prevBtn,#nextBtn{width:42px;height:42px;border-radius:50%;padding:0}
+#timeline{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+#timeline button{font:12px var(--mono);padding:4px 10px;border-radius:99px}
+#timeline button.cur{border-color:var(--star);color:var(--star);background:rgba(255,210,122,.1)}
 #timeline button.ref{box-shadow:inset 0 -2px 0 var(--nebula)}
 #progress{height:3px;background:rgba(150,175,255,.12);border-radius:3px;overflow:hidden}
 #progress div{height:100%;width:0;background:linear-gradient(90deg,var(--nebula),var(--violet));transition:width .2s}
-#status{font:12px var(--mono);color:var(--dim);min-height:18px}
-#caption{padding:12px 14px;font-size:13px;color:var(--dim)}
+#status{font:12.5px var(--mono);color:var(--dim);min-height:18px;text-align:center}
+.views{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.views button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:12px 14px;border-radius:14px;background:rgba(10,15,34,.75)}
+.views button b{font-size:15px}
+.views button span{font-size:12.5px;color:var(--dim);line-height:1.35}
+.views button.on{border-color:var(--nebula);background:rgba(127,216,255,.1)}
+.views button.on b{color:var(--nebula)}
+#caption{padding:14px 18px;font-size:14.5px;color:#cdd5f2}
 #caption b{color:var(--text)}
-.kbd{font:11px var(--mono);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--text)}
+#caption .how{color:var(--dim);font-size:13.5px;display:block;margin-top:4px}
 
-/* right */
-.tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--panel2);padding:3px;border-radius:var(--rs);border:1px solid var(--line)}
-.tabs button{flex:1;font-size:12px;border:0;background:transparent;padding:6px 4px}
+/* ---------- measurements section ---------- */
+#right{width:min(100%,1100px);padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}
+#right .main{min-width:0}
+.tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--panel2);padding:4px;border-radius:12px;border:1px solid var(--line);flex-wrap:wrap}
+.tabs button{flex:1;font-size:13.5px;border:0;background:transparent;padding:8px 6px;white-space:nowrap}
 .tabs button.on{background:rgba(127,216,255,.16);color:var(--nebula);font-weight:600}
 .tab{display:none}.tab.on{display:block}
-canvas.plot{width:100%;height:260px;background:rgba(3,6,18,.7);border:1px solid var(--line);border-radius:var(--rs);margin-top:8px}
-table{width:100%;border-collapse:collapse;font:11.5px var(--mono)}
-th,td{padding:4px 5px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+canvas.plot{width:100%;height:300px;background:rgba(3,6,18,.7);border:1px solid var(--line);border-radius:var(--rs);margin-top:8px}
+table{width:100%;border-collapse:collapse;font:12px var(--mono)}
+th,td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 th{color:var(--dim);font-weight:500;position:sticky;top:0;background:var(--panel-solid)}
 #expTable{max-height:440px;overflow:auto;margin-top:8px}
-#aladin{width:100%;height:340px;border:1px solid var(--line);border-radius:var(--rs);background:#000}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font:12px var(--mono)}
+#aladin{width:100%;height:440px;border:1px solid var(--line);border-radius:var(--rs);background:#000;overflow:hidden}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font:12.5px var(--mono)}
 .kv span:nth-child(odd){color:var(--dim)}
-.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font:11px var(--mono);color:var(--dim);margin:6px 0 4px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font:11.5px var(--mono);color:var(--dim);margin:6px 0 4px}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .legend i.line{width:14px;height:0;border-radius:0;border-top:2px dashed #fff;vertical-align:3px}
+h3{font-size:11.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--dim);margin:0 0 10px;font-weight:600}
 
-/* about dialog */
+/* ---------- advanced drawer ---------- */
+#adv{position:fixed;top:0;left:0;bottom:0;width:min(360px,92vw);z-index:30;padding:18px;overflow:auto;border-radius:0 var(--r) var(--r) 0;transform:translateX(-105%);transition:transform .25s ease;background:rgba(8,12,28,.97)}
+#adv.open{transform:none;box-shadow:20px 0 60px rgba(0,0,0,.5)}
+#advShade{position:fixed;inset:0;z-index:25;background:rgba(2,3,10,.45);display:none}
+#advShade.open{display:block}
+#adv .head{display:flex;align-items:center;margin-bottom:6px}
+#adv .head h2{margin:0;font-size:17px}
+#adv h4{font-size:11.5px;text-transform:uppercase;letter-spacing:1.3px;color:var(--star);margin:20px 0 6px;font-weight:600}
+#adv .why{font-size:12px;color:var(--faint);margin:2px 0 6px}
+#adv label{display:block;font-size:12.5px;color:var(--dim);margin:8px 0 4px}
+#adv input[type=text],#adv input[type=number],#adv select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 9px;font:13px var(--mono)}
+#adv input[type=range]{width:100%;accent-color:var(--star)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel2)}
+.seg button{flex:1;border:0;border-radius:0;font-size:12.5px;padding:7px 4px;background:transparent}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:rgba(127,216,255,.14);color:var(--nebula);font-weight:600}
+.dets{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dets label{display:flex;gap:6px;align-items:center;margin:0 !important;color:var(--text) !important;font:12px var(--mono) !important;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px 7px;cursor:pointer}
+.dets label:has(input:checked){border-color:rgba(127,216,255,.45)}
+.dets small{color:var(--dim);font-size:10.5px}
+.chk{display:flex !important;gap:8px;align-items:center;color:var(--text) !important;font-size:13.5px !important;margin:6px 0 !important}
+.chk input{margin:0;accent-color:var(--nebula)}
+.chk i{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid currentColor}
+
+/* ---------- guided tour ---------- */
+#tour{position:fixed;inset:0;z-index:60;display:none}
+#tour.on{display:block}
+#tourHole{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(2,3,10,.72);border:2px solid var(--star);transition:all .25s ease;pointer-events:none}
+#tourCard{position:fixed;width:min(340px,calc(100vw - 32px));padding:16px 18px;border-radius:14px;background:#0c1330;border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#tourCard h4{margin:0 0 6px;color:var(--star);font-size:15.5px}
+#tourCard p{margin:0 0 12px;color:#cdd5f2;font-size:14px}
+#tourCard .row{align-items:center}
+#tourStep{font:12px var(--mono);color:var(--faint)}
+
+/* ---------- about dialog ---------- */
 dialog{border:1px solid var(--line2);border-radius:18px;background:rgba(7,11,28,.97);color:var(--text);padding:0;max-width:820px;width:calc(100% - 32px);max-height:calc(100vh - 48px)}
 dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
 .dlg-head{display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line)}
 .dlg-head h2{margin:0;font-size:17px}
 .dlg-tabs{display:flex;gap:4px;padding:10px 22px 0;flex-wrap:wrap}
-.dlg-tabs button{border-radius:99px;font-size:12.5px}
+.dlg-tabs button{border-radius:99px;font-size:13px}
 .dlg-tabs button.on{border-color:var(--star);color:var(--star)}
 .dlg-body{padding:6px 22px 22px;overflow:auto;max-height:calc(100vh - 190px)}
 .dlg-body section{display:none}.dlg-body section.on{display:block}
-.dlg-body h4{font-size:14px;margin:18px 0 6px;color:var(--star)}
-.dlg-body p,.dlg-body li{color:#cdd5f2;font-size:13.5px}
-.dlg-body table{font:12.5px system-ui,sans-serif}
+.dlg-body h4{font-size:14.5px;margin:18px 0 6px;color:var(--star)}
+.dlg-body p,.dlg-body li{color:#cdd5f2;font-size:14px}
+.dlg-body table{font:13px system-ui,sans-serif}
 .dlg-body td,.dlg-body th{white-space:normal;vertical-align:top;padding:6px 8px}
 .dlg-body th{background:transparent}
 .pill{display:inline-block;font:11px var(--mono);padding:1px 7px;border-radius:99px;border:1px solid var(--line2);color:var(--dim)}
@@ -155,9 +181,12 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
 .bands div{flex:1;font:600 10.5px var(--mono);color:#0a0f22;display:grid;place-items:center}
 .bandlab{display:flex;justify-content:space-between;font:10.5px var(--mono);color:var(--dim)}
 
-@media (max-width:1200px){main{grid-template-columns:300px 1fr}#right{grid-column:1/-1;position:static;max-height:none}}
-@media (max-width:760px){main{grid-template-columns:1fr;padding:10px}aside{position:static;max-height:none}.tagline{display:none}header{padding:10px 14px;gap:10px}}
-@media (prefers-reduced-motion: reduce){#spinner{animation:none}}
+/* ---------- embed + small screens ---------- */
+body.embed header, body.embed .intro, body.embed .presets, body.embed .views, body.embed #caption, body.embed #right, body.embed #adv{display:none}
+body.embed main{padding:8px}
+@media (max-width:900px){#right{grid-template-columns:1fr}}
+@media (max-width:640px){.views{grid-template-columns:1fr}.preset{min-width:0;flex:1 1 40%}header nav .lbl{display:none}#modeBadge{display:none}header{padding:10px 14px}:root{--dome:calc(100vw - 80px)}#player{flex-wrap:wrap;justify-content:center}#player .grow{order:5;flex-basis:100%}}
+@media (prefers-reduced-motion: reduce){#spinner{animation:none}#adv,#tourHole{transition:none}}
 </style>
 </head>
 <body>
@@ -168,22 +197,111 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="none" stroke="rgba(127,216,255,.5)"/><circle cx="16" cy="16" r="9" fill="none" stroke="rgba(127,216,255,.25)"/><path d="M16 6l2 8 8 2-8 2-2 8-2-8-8-2 8-2z" fill="#ffd27a"/></svg>
     <h1><b>SPHEREx</b> Blink</h1>
   </a>
-  <span class="tagline">Play SPHEREx's 0.75–5 µm infrared images of one patch of sky as a little video, and watch things move.</span>
   <span class="spacer"></span>
-  <nav class="top">
-    <button data-about="project">About</button>
-    <button data-about="use">How to use</button>
-    <button data-about="science">The science</button>
+  <nav>
+    <button id="tourBtn" title="A 30-second tour of the screen">✦ <span class="lbl">Tour</span></button>
+    <button data-about="project" title="What this project is">ⓘ <span class="lbl">About</span></button>
+    <button id="advBtn" title="All settings">⚙ <span class="lbl">Advanced</span></button>
   </nav>
-  <span id="modeBadge">—</span>
+  <button id="modeBadge" title="Where the images come from (change in Advanced)">—</button>
 </header>
 
 <main>
-<aside class="card">
-  <div class="step"><span class="n">1</span><h2>Pick a target</h2></div>
-  <div class="presets" id="presets"></div>
-  <details id="customBox">
-    <summary>Or enter a name or coordinates</summary>
+  <div class="intro">
+    <h2>Look up at one patch of sky, month after month.</h2>
+    <p>NASA's SPHEREx telescope photographs the whole sky in infrared every six months. Pick an object, press play, watch what moves.</p>
+  </div>
+
+  <div class="presets" id="presets" aria-label="Targets"></div>
+
+  <div id="banner" class="w"></div>
+
+  <div class="domewrap">
+    <div id="stage">
+      <canvas id="img" class="smooth"></canvas>
+      <canvas id="ov"></canvas>
+      <div id="empty"><div><b>Pick something to look at</b>Choose one of the objects above.</div></div>
+      <div id="spinner"></div>
+      <div id="hud"></div>
+      <div id="hud2"></div>
+    </div>
+    <div class="rim" aria-hidden="true">
+      <svg viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet">
+        <g id="rimTicks" stroke="rgba(170,190,255,.35)" stroke-width=".25"></g>
+        <text class="n" x="0" y="-47.2" style="font-size:3.6px">N</text>
+        <text x="-47.2" y="0" style="font-size:3.6px">E</text>
+        <text x="0" y="47.4" style="font-size:3.6px">S</text>
+        <text x="47.2" y="0" style="font-size:3.6px">W</text>
+      </svg>
+    </div>
+  </div>
+
+  <div id="player" class="card w">
+    <button id="prevBtn" title="Previous frame (←)" aria-label="Previous frame">◀</button>
+    <button id="playBtn" title="Play / pause (space)" aria-label="Play">▶</button>
+    <button id="nextBtn" title="Next frame (→)" aria-label="Next frame">▶</button>
+    <div class="grow"><span class="note">speed</span><input type="range" id="fps" min="0.5" max="12" step="0.5" value="2" aria-label="Frames per second"><span class="note" id="fpsVal">2 fps</span></div>
+    <button id="linkBtn" title="Copy a link to this exact view">Share</button>
+  </div>
+  <div id="timeline" class="w"></div>
+  <div id="progress" class="w"><div></div></div>
+  <div id="status" class="w" role="status"></div>
+
+  <div class="views w" id="dispSeg" role="radiogroup" aria-label="What to show">
+    <button data-v="gray"><b>Picture</b><span>The sky as SPHEREx saw it on each date.</span></button>
+    <button data-v="rgb"><b>Colours</b><span>Short infrared = blue, long = red. Cold objects glow red.</span></button>
+    <button data-v="diff"><b>What changed</b><span>Hides everything that stayed the same. Movers become orange + blue pairs.</span></button>
+  </div>
+
+  <div id="caption" class="card w"></div>
+
+  <section id="right" class="card">
+    <div class="main">
+      <div class="tabs" id="tabs" role="tablist">
+        <button data-t="spec" class="on">Colours (spectrum)</button><button data-t="lc">Brightness over time</button><button data-t="ctx">Whole-sky map</button><button data-t="exp">Data files</button>
+      </div>
+      <div class="tab on" id="tab-spec">
+        <div class="note" id="specNote">How bright the target is in each of SPHEREx's colours, measured from the images above. <b>Click anywhere on the dome</b> to measure that spot instead.</div>
+        <canvas class="plot" id="specPlot"></canvas>
+        <div class="legend" id="specLegend"></div>
+      </div>
+      <div class="tab" id="tab-lc">
+        <div class="note">Does it get brighter or fainter between visits? Each colour is one detector; 1.0 means its usual brightness.</div>
+        <canvas class="plot" id="lcPlot"></canvas>
+        <div class="legend" id="lcLegend"></div>
+      </div>
+      <div class="tab" id="tab-ctx">
+        <div class="note">NASA's finished <b>SPHEREx all-sky map</b> of the same spot: every observation <i>averaged together</i>, so nothing moves here. Use it to see the surroundings, or compare with other telescopes. Drag to pan, scroll to zoom.</div>
+        <div class="row" style="margin:8px 0"><select id="hips" aria-label="Survey" style="background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:7px 9px;font:13px var(--mono)">
+          <option value="https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube" data-cube="1">SPHEREx all-sky map · 102 colours</option>
+          <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/RGB-W4-W2-W1">WISE telescope (3.4–22 µm)</option>
+          <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/2MASS/Color">2MASS survey (1.2–2.2 µm)</option>
+          <option value="https://alasky.cds.unistra.fr/DSS/DSSColor">Visible light: DSS (CDS)</option>
+          <option value="https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-z-zg-g">Visible light: Pan-STARRS (CDS)</option>
+        </select><button id="aladinBtn" style="flex:0 0 auto">Re-centre</button></div>
+        <div id="cubeBox"><label for="cubeSlice" class="note">SPHEREx colour: <b id="cubeVal" style="color:var(--text)"></b></label><input type="range" id="cubeSlice" min="0" max="101" step="1" value="40" style="width:100%;accent-color:var(--star)"></div>
+        <div id="aladin"></div>
+      </div>
+      <div class="tab" id="tab-exp">
+        <div class="note" id="expNote">Every image used, with its date, colour and data quality. Hover the flags column for details.</div>
+        <div id="expTable"></div>
+      </div>
+    </div>
+    <div>
+      <h3>About this view</h3>
+      <div class="kv" id="meta"></div>
+      <div class="kv" id="photInfo" style="margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+
+<div id="advShade"></div>
+<aside id="adv" class="card" aria-label="Advanced settings">
+  <div class="head"><h2>Advanced</h2><span class="spacer"></span><button id="advClose" aria-label="Close advanced settings">✕</button></div>
+  <div class="why">Everything here is optional. The defaults are chosen for each target.</div>
+
+  <h4>Your own target</h4>
+  <div id="customBox">
     <label for="name">Object name (looked up with CDS Sesame)</label>
     <div class="row"><input type="text" id="name" placeholder="e.g. Barnard's star"><button id="resolveBtn" style="flex:0 0 auto">Look up</button></div>
     <div class="row">
@@ -198,117 +316,61 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
       <div><label for="plx">Parallax (mas)</label><input type="number" id="plx" value="0"></div>
       <div><label for="epoch">Coord. epoch (yr)</label><input type="number" id="epoch" value="2000" step="0.1"></div>
     </div>
-  </details>
+    <button class="primary" id="goBtn" style="width:100%;margin-top:10px">Load this position</button>
+  </div>
 
-  <div class="step"><span class="n">2</span><h2>Choose the data</h2></div>
-  <div class="seg" id="srcSeg"><button data-v="demo" title="Real SPHEREx cutouts bundled with the app — instant">Demo pack</button><button data-v="live" title="Query IRSA for the newest data">Live IRSA</button><button data-v="sim" title="Synthetic sky, works offline">Simulated</button></div>
+  <h4>Where the images come from</h4>
+  <div class="seg" id="srcSeg"><button data-v="demo" title="Real SPHEREx cutouts bundled with the app">Saved (real)</button><button data-v="live" title="Newest data from NASA/IPAC IRSA">Live archive</button><button data-v="sim" title="Synthetic sky, works offline">Simulated</button></div>
   <div class="note" id="srcNote" style="margin-top:6px"></div>
   <label for="fov">Field of view: <b id="fovVal" style="color:var(--text)"></b></label>
   <input type="range" id="fov" min="2" max="30" step="1" value="6">
-  <div class="note" id="fovNote">Bigger fields catch faster movers, but each image is a bigger download.</div>
-  <button class="primary" id="goBtn" style="width:100%;margin-top:12px">Load images</button>
-  <details>
-    <summary>Download settings</summary>
-    <label for="maxPer">Max exposures per detector per season</label>
-    <input type="number" id="maxPer" value="3" min="1" max="40">
-    <label for="release">When an exposure exists in several releases</label>
-    <select id="release"><option value="latest">Use the newest version</option><option value="all">Keep every version</option></select>
-    <label for="route">Request route</label>
-    <select id="route"><option value="auto">Auto (local proxy if available)</option><option value="proxy">Local proxy (server.py)</option><option value="direct">Direct to archives</option></select>
-    <div class="note" style="margin-top:6px">Browsers often block direct archive requests (CORS). Run <code>python3 server.py</code> and open the page it serves.</div>
-  </details>
+  <div class="note" id="fovNote"></div>
+  <label for="maxPer">Images per detector per visit</label>
+  <input type="number" id="maxPer" value="3" min="1" max="40">
+  <label for="release">When an image exists in several releases</label>
+  <select id="release"><option value="latest">Use the newest version</option><option value="all">Keep every version</option></select>
+  <label for="route">Request route</label>
+  <select id="route"><option value="auto">Auto (local proxy if available)</option><option value="proxy">Local proxy (server.py)</option><option value="direct">Direct to archives</option></select>
 
-  <div class="step"><span class="n">3</span><h2>Explore</h2></div>
+  <h4>Frames</h4>
   <label>One frame per…</label>
-  <div class="seg" id="groupSeg"><button data-v="epoch" title="Six-month survey passes">Season</button><button data-v="visit" title="Exposures within a day">Visit</button><button data-v="each">Exposure</button><button data-v="all" title="One deep stack of everything">All</button></div>
-  <label>Detectors to stack (each covers 17 of the 102 bands)</label>
+  <div class="seg" id="groupSeg"><button data-v="epoch" title="Six-month survey passes">Visit season</button><button data-v="visit" title="Images within a day">Day</button><button data-v="each">Image</button><button data-v="all" title="One deep stack of everything">All</button></div>
+  <label>Detectors (each covers 17 of the 102 colours)</label>
   <div class="dets" id="dets"></div>
-  <label>Show as</label>
-  <div class="seg" id="dispSeg"><button data-v="gray">Mono</button><button data-v="rgb">3-colour</button><button data-v="diff">Difference</button></div>
-  <div class="note" id="dispNote" style="margin-top:6px"></div>
-  <details id="moreDisp">
-    <summary>More display options</summary>
-    <label>Combine images in a frame by</label>
-    <div class="seg" id="combSeg"><button data-v="median">Median</button><button data-v="mean">Mean</button><button data-v="sum">Sum</button></div>
-    <label>Difference against</label>
-    <div class="seg" id="refSeg"><button data-v="first">Chosen frame</button><button data-v="mean">Mean of all</button><button data-v="prev">Previous</button></div>
-    <label>Stretch</label>
-    <div class="seg" id="stretchSeg"><button data-v="asinh">asinh</button><button data-v="linear">linear</button><button data-v="log">log</button></div>
-    <label>Contrast: clip at <span id="clipVal"></span> percentile</label>
-    <input type="range" id="clip" min="95" max="99.95" step="0.05" value="99.5">
-    <label class="chk"><input type="checkbox" id="perFrame"> Rescale brightness on every frame</label>
-    <label class="chk"><input type="checkbox" id="smooth" checked> Smooth pixels (off = show the raw 6.15″ pixels)</label>
-  </details>
-  <h3>Overlays</h3>
+  <label>Combine images in a frame by</label>
+  <div class="seg" id="combSeg"><button data-v="median">Median</button><button data-v="mean">Mean</button><button data-v="sum">Sum</button></div>
+
+  <h4>"What changed" compares with…</h4>
+  <div class="seg" id="refSeg"><button data-v="first">One chosen frame</button><button data-v="mean">The average</button><button data-v="prev">The frame before</button></div>
+  <button id="setRefBtn" style="width:100%;margin-top:6px" title="Use the frame on screen as the comparison (R)">Use the current frame as the comparison</button>
+
+  <h4>Brightness</h4>
+  <label>Stretch</label>
+  <div class="seg" id="stretchSeg"><button data-v="asinh">asinh</button><button data-v="linear">linear</button><button data-v="log">log</button></div>
+  <label>Contrast: clip at <span id="clipVal"></span> percentile</label>
+  <input type="range" id="clip" min="95" max="99.95" step="0.05" value="99.5">
+  <label class="chk"><input type="checkbox" id="perFrame"> Rescale brightness on every frame</label>
+  <label class="chk"><input type="checkbox" id="smooth" checked> Smooth pixels (off = raw 6.15″ pixels)</label>
+
+  <h4>Overlays on the dome</h4>
   <label class="chk"><input type="checkbox" id="ovTarget" checked> <i style="color:var(--star)"></i> Target's predicted path</label>
-  <label class="chk"><input type="checkbox" id="ovGaia" checked> <i style="color:var(--nebula)"></i> Gaia DR3 stars (moved to frame date)</label>
+  <label class="chk"><input type="checkbox" id="ovGaia"> <i style="color:var(--nebula)"></i> Gaia DR3 stars (moved to each date)</label>
   <label class="chk"><input type="checkbox" id="ovWise"> <i style="color:#ff8fd8;border-radius:2px"></i> AllWISE sources (2010 positions)</label>
-  <label class="chk"><input type="checkbox" id="ovCompass" checked> Compass &amp; scale bar</label>
+  <label class="chk"><input type="checkbox" id="ovCompass" checked> Scale bar</label>
   <label class="chk"><input type="checkbox" id="ovNan"> Highlight masked pixels</label>
+
+  <h4>Measurements</h4>
+  <label class="chk"><input type="checkbox" id="specLog" checked> Log brightness axis</label>
+  <label class="chk"><input type="checkbox" id="specTrack" checked> Measure at the target's predicted position</label>
+  <label class="chk"><input type="checkbox" id="specApcor" checked> Aperture correction (PSF from each file)</label>
+  <div class="note" id="dispNote" style="margin-top:10px"></div>
 </aside>
 
-<section id="center">
-  <div id="banner" class="w"></div>
-  <div id="stage" class="w">
-    <canvas id="img" class="smooth"></canvas>
-    <canvas id="ov"></canvas>
-    <div id="empty"><div><b>Pick a target to begin</b>Choose one of the five challenge targets on the left, or enter your own coordinates.</div></div>
-    <div id="spinner"></div>
-    <div id="hud"></div>
-    <div id="hud2"></div>
-  </div>
-  <div id="player" class="card w">
-    <button id="prevBtn" title="Previous frame (←)" aria-label="Previous frame">◀</button>
-    <button id="playBtn" title="Play / pause (space)" aria-label="Play">▶</button>
-    <button id="nextBtn" title="Next frame (→)" aria-label="Next frame">▶</button>
-    <div class="grow"><span class="note">speed</span><input type="range" id="fps" min="0.5" max="12" step="0.5" value="2" aria-label="Frames per second"><span class="note" id="fpsVal">2 fps</span></div>
-    <button id="setRefBtn" title="Use this frame as the difference reference (R)">Set ref</button>
-    <button id="linkBtn" title="Copy a shareable link to this view">Share</button>
-  </div>
-  <div id="timeline" class="w"></div>
-  <div id="progress" class="w"><div></div></div>
-  <div id="status" class="w" role="status"></div>
-  <div id="caption" class="card w"></div>
-</section>
-
-<section id="right" class="card">
-  <div class="tabs" id="tabs" role="tablist">
-    <button data-t="spec" class="on">Spectrum</button><button data-t="lc">Light curve</button><button data-t="exp">Exposures</button><button data-t="ctx">Sky context</button>
-  </div>
-  <div class="tab on" id="tab-spec">
-    <div class="note" id="specNote">Brightness against wavelength, measured on the fly in every exposure. <b>Click anywhere on the image</b> to measure there instead of at the target.</div>
-    <canvas class="plot" id="specPlot"></canvas>
-    <div class="legend" id="specLegend"></div>
-    <label class="chk"><input type="checkbox" id="specLog" checked> Log flux axis</label>
-    <label class="chk"><input type="checkbox" id="specTrack" checked> Follow the target's predicted position</label>
-    <label class="chk"><input type="checkbox" id="specApcor" checked> Aperture correction (PSF from each file)</label>
-    <div class="kv" id="photInfo" style="margin-top:8px"></div>
-  </div>
-  <div class="tab" id="tab-lc">
-    <div class="note">Brightness over time at the measured position. Each detector is divided by its own median, so all six share one axis. Dots are single exposures; lines join season medians.</div>
-    <canvas class="plot" id="lcPlot"></canvas>
-    <div class="legend" id="lcLegend"></div>
-  </div>
-  <div class="tab" id="tab-exp">
-    <div class="note" id="expNote">Every exposure loaded, with its data quality and a link to the file.</div>
-    <div id="expTable"></div>
-  </div>
-  <div class="tab" id="tab-ctx">
-    <div class="note">The <b>real SPHEREx all-sky map</b> (DR1, all 102 bands) around this spot, plus other telescopes' views, in Aladin Lite. Drag to pan, scroll to zoom.</div>
-    <div class="row" style="margin:8px 0"><select id="hips" aria-label="Survey">
-      <option value="https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube" data-cube="1">SPHEREx DR1 all-sky · 102 bands</option>
-      <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/RGB-W4-W2-W1">AllWISE colour (3.4–22 µm)</option>
-      <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/2MASS/Color">2MASS colour (1.2–2.2 µm)</option>
-      <option value="https://alasky.cds.unistra.fr/DSS/DSSColor">DSS2 colour (optical, CDS)</option>
-      <option value="https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-z-zg-g">Pan-STARRS (optical, CDS)</option>
-    </select><button id="aladinBtn" style="flex:0 0 auto">Centre</button></div>
-    <div id="cubeBox"><label for="cubeSlice">SPHEREx band: <b id="cubeVal" style="color:var(--text)"></b></label><input type="range" id="cubeSlice" min="0" max="101" step="1" value="40"></div>
-    <div id="aladin"></div>
-  </div>
-  <h3>About this view</h3>
-  <div class="kv" id="meta"></div>
-</section>
-</main>
+<div id="tour" role="dialog" aria-label="Guided tour">
+  <div id="tourHole"></div>
+  <div id="tourCard"><h4 id="tourTitle"></h4><p id="tourText"></p>
+    <div class="row"><span id="tourStep"></span><span class="spacer"></span><button id="tourSkip" style="flex:0 0 auto">Skip</button><button id="tourNext" class="primary" style="flex:0 0 auto">Next</button></div></div>
+</div>
 </div>
 
 <dialog id="about" aria-labelledby="aboutTitle">
@@ -327,12 +389,12 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
       <h4>Each challenge request, and our answer</h4>
       <table>
         <tr><th>Challenge asks</th><th>SPHEREx Blink</th></tr>
-        <tr><td>Play the images of a patch like a video</td><td>Play, pause, step and speed controls. Keys: <span class="kbd">space</span> <span class="kbd">←</span> <span class="kbd">→</span>.</td></tr>
+        <tr><td>Play the images of a patch like a video</td><td>A planetarium-style dome with play, pause, step and speed controls. Keys: <span class="kbd">space</span> <span class="kbd">←</span> <span class="kbd">→</span>.</td></tr>
         <tr><td>Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur and R Dra</td><td>One-click targets with their real proper motions and parallaxes. A bundled <b>demo pack</b> of real SPHEREx cutouts for each one loads instantly.</td></tr>
         <tr><td>Easy to update with new releases</td><td>Live mode queries IRSA's SPHEREx tables, so new weekly data appears automatically and the newest version of each exposure wins. <code>tools/fetch_demo.py</code> rebuilds the demo pack in one command.</td></tr>
-        <tr><td>Use the 102 bands creatively; stack each detector</td><td>Pick detectors to stack. Each frame is a sky-subtracted median, mean or sum. The 3-colour mode maps short, middle and long wavelengths to blue, green and red.</td></tr>
+        <tr><td>Use the 102 bands creatively; stack each detector</td><td>Pick detectors to stack. Each frame is a sky-subtracted median, mean or sum. <i>Colours</i> maps short, middle and long wavelengths to blue, green and red.</td></tr>
         <tr><td>Spectra on the fly</td><td>Aperture photometry in every exposure, at each pixel's true wavelength from the file's <code>WCS-WAVE</code> table. Click anywhere to measure there.</td></tr>
-        <tr><td>Add or subtract images from different times</td><td>Frames per season, visit or exposure, or one deep stack of all of them. Difference mode subtracts a chosen frame, the mean or the previous frame.</td></tr>
+        <tr><td>Add or subtract images from different times</td><td>Frames per season, visit or exposure, or one deep stack of all of them. <i>What changed</i> subtracts a chosen frame, the average or the previous frame.</td></tr>
         <tr><td>Let users choose the field of view</td><td>2′ to 30′, with the download size shown before fetching.</td></tr>
         <tr><td>Overlay Gaia, WISE</td><td>Gaia DR3 moved to each frame's date. AllWISE sources at their 2010 positions. Aladin Lite for AllWISE, 2MASS, DSS and Pan-STARRS images.</td></tr>
         <tr><td>Coordinates in the URL; embeddable</td><td><code>?ra=133.79513&amp;dec=-7.24515&amp;pmra=-8123.7&amp;pmdec=673.2&amp;plx=439&amp;epoch=2010.33</code>. Add <code>&amp;embed=1</code> for a bare player to put in an iframe.</td></tr>
@@ -341,24 +403,29 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
       </table>
     </section>
     <section data-s="use">
-      <h4>Four steps</h4>
+      <h4>Three steps</h4>
       <ol>
-        <li><b>Pick a target.</b> Click one of the five cards, or open "enter a name or coordinates". Names are looked up with CDS Sesame, which also fills in proper motion and parallax.</li>
-        <li><b>Choose the data.</b> <span class="pill">Demo pack</span> uses real SPHEREx cutouts that ship with the app and load instantly. <span class="pill">Live IRSA</span> fetches the newest data, which takes longer. <span class="pill">Simulated</span> is a synthetic sky that works offline.</li>
-        <li><b>Press play</b> <span class="kbd">space</span>. Step with <span class="kbd">←</span> <span class="kbd">→</span>. The dashed gold line is where the target <i>should</i> be, from its known motion. The gold cross-hair marks this frame's date.</li>
-        <li><b>Explore.</b> Switch to <i>Difference</i> to cancel out everything that doesn't change. Click a star to measure its spectrum. Open the light curve to see whether it varies.</li>
+        <li><b>Pick an object</b> from the row of cards. To use your own, choose <i>Somewhere else…</i> and type a name or coordinates.</li>
+        <li><b>Press play</b> <span class="kbd">space</span>. Each frame is a different SPHEREx visit, months apart. Step with <span class="kbd">←</span> <span class="kbd">→</span>. The gold dotted line is where the object <i>should</i> be, from its known motion, and the gold cross-hair marks the current date.</li>
+        <li><b>Choose how to look</b> with the three buttons under the dome (below), then read the measurements underneath.</li>
       </ol>
-      <h4>Reading the picture</h4>
+      <h4>The three ways to look</h4>
       <ul>
-        <li><b>Mono</b>: the selected detectors stacked into one image. North is up and east is left, like the sky seen from below.</li>
-        <li><b>3-colour</b>: blue = D1–D2 (0.75–1.6 µm), green = D3–D4 (1.6–3.8 µm), red = D5–D6 (3.8–5.0 µm). Cold brown dwarfs are red. Hot stars are blue-white.</li>
-        <li><b>Difference</b>: orange means brighter than the reference and blue means fainter. A moving object leaves an orange/blue <i>pair</i>. A variable star glows one colour.</li>
-        <li><b>Frames</b>: <i>Season</i> = one frame per six-month survey pass, which gives the best signal-to-noise. <i>Visit</i> and <i>Exposure</i> show faster changes. <i>All</i> stacks everything into one deep image.</li>
+        <li><b>Picture</b>: the sky as SPHEREx saw it on each date. All selected detectors are added together into one image. Like lying back and looking up: north at the top, east on the left.</li>
+        <li><b>Colours</b>: the same view coloured by wavelength. Blue = shortest infrared (0.75–1.6 µm), green = middle (1.6–3.8 µm), red = longest (3.8–5.0 µm). Cold brown dwarfs glow red; hot stars look blue-white.</li>
+        <li><b>What changed</b>: each frame minus a comparison frame. Everything that stayed the same turns black. Orange = brighter than before, blue = fainter. A moving object leaves blue where it was and orange where it is now. A star that changes brightness glows one colour. (Advanced lets you compare with one chosen frame, the average of all frames, or the frame just before.)</li>
+      </ul>
+      <h4>The measurements under the dome</h4>
+      <ul>
+        <li><b>Colours (spectrum)</b>: how bright the object is in each of SPHEREx's colours, measured from these images. Click anywhere on the dome to measure that spot.</li>
+        <li><b>Brightness over time</b>: whether it gets brighter or fainter between visits.</li>
+        <li><b>Whole-sky map</b>: NASA's finished SPHEREx map of the area. Every observation is averaged into one picture, so nothing moves there. It is the "where am I?" view; the dome is the "what changed?" view.</li>
+        <li><b>Data files</b>: every image used, with its date, colour, release and data-quality flags.</li>
       </ul>
       <h4>Shortcuts</h4>
-      <p><span class="kbd">space</span> play/pause · <span class="kbd">←</span> <span class="kbd">→</span> step · <span class="kbd">D</span> difference · <span class="kbd">C</span> 3-colour · <span class="kbd">M</span> mono · <span class="kbd">R</span> set reference · <span class="kbd">?</span> this guide</p>
-      <h4>Embedding</h4>
-      <p>Every view has a link (<b>Share</b>). Add <code>&amp;embed=1</code> to get just the player, ready for an <code>&lt;iframe&gt;</code> on another site.</p>
+      <p><span class="kbd">space</span> play/pause · <span class="kbd">←</span> <span class="kbd">→</span> step · <span class="kbd">M</span> picture · <span class="kbd">C</span> colours · <span class="kbd">D</span> what changed · <span class="kbd">R</span> compare with this frame · <span class="kbd">?</span> this guide · <span class="kbd">Esc</span> close panels</p>
+      <h4>Sharing and embedding</h4>
+      <p><b>Share</b> copies a link to the exact view. Add <code>&amp;embed=1</code> to get just the dome and player, ready for an <code>&lt;iframe&gt;</code> on another site.</p>
     </section>
     <section data-s="science">
       <h4>What to look for in each target</h4>
@@ -370,7 +437,7 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
         <tr><td><b>R Draconis</b></td><td>A Mira variable, a pulsating red giant with a 246-day period. It changes brightness a lot between SPHEREx seasons, more at short wavelengths. Water absorption shapes its spectrum.</td></tr>
       </table>
       <h4>Hunting for something new</h4>
-      <p>A distant, undiscovered planet ("Planet X") would move only a few arcseconds per hour. Over a few days it crosses several SPHEREx pixels. Use <i>Exposure</i> frames with a larger field of view, then <i>Difference</i>. Anything leaving an orange/blue trail that is not a known Gaia star is worth a second look. The simulated sky includes one such slow mover so you can practise.</p>
+      <p>A distant, undiscovered planet ("Planet X") would move only a few arcseconds per hour. Over a few days it crosses several SPHEREx pixels. In Advanced, choose one frame per <i>Image</i> and a larger field of view, then press <i>What changed</i>. Anything leaving an orange/blue trail that is not a known Gaia star is worth a second look. The simulated sky includes one such slow mover so you can practise.</p>
     </section>
     <section data-s="data">
       <h4>Where the data comes from</h4>
@@ -1116,11 +1183,11 @@ function drawOverlay(){
     ctx.strokeStyle="#6ee7a8"; ctx.lineWidth=1.2*dpr; ctx.beginPath(); ctx.arc(x,y,A*k,0,7); ctx.stroke(); ctx.setLineDash([2*dpr,2*dpr]);
     for(const r of [a1,a2]){ ctx.beginPath(); ctx.arc(x,y,r*k,0,7); ctx.stroke(); } ctx.setLineDash([]); }
   if($("ovCompass").checked){
-    ctx.strokeStyle="#fff"; ctx.fillStyle="#fff"; ctx.font=`${11*dpr}px ui-monospace,monospace`; const cx=W-28*dpr, cy=40*dpr, L=22*dpr;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,cy-L); ctx.moveTo(cx,cy); ctx.lineTo(cx-L,cy); ctx.stroke();
-    ctx.fillText("N",cx-4*dpr,cy-L-4*dpr); ctx.fillText("E",cx-L-12*dpr,cy+4*dpr);
-    const arcmin = S.fovDeg*60>=10? 2 : 1; const len=arcmin/60/S.scaleDeg*k; const bx=12*dpr, by=W-34*dpr;
-    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx+len,by); ctx.stroke(); ctx.fillText(`${arcmin}′`, bx, by-5*dpr);
+    // scale bar, centred low inside the dome (north/east are marked on the dome's rim)
+    ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.fillStyle="rgba(255,255,255,.85)"; ctx.font=`${12*dpr}px ui-monospace,monospace`; ctx.textAlign="center";
+    const arcmin = S.fovDeg*60>=10? 2 : 1; const len=arcmin/60/S.scaleDeg*k; const by=W*0.87;
+    ctx.beginPath(); ctx.moveTo(W/2-len/2,by); ctx.lineTo(W/2+len/2,by); ctx.moveTo(W/2-len/2,by-4*dpr); ctx.lineTo(W/2-len/2,by+4*dpr); ctx.moveTo(W/2+len/2,by-4*dpr); ctx.lineTo(W/2+len/2,by+4*dpr); ctx.stroke();
+    ctx.fillText(`${arcmin} arcmin`, W/2, by-8*dpr); ctx.textAlign="start";
   }
 }
 function renderTimeline(){
@@ -1241,24 +1308,25 @@ function renderMeta(extra){
 function setCaption(){
   const t=S.target, p=PRESETS.find(p=>p.name===t?.name);
   const tips = {
-    mdwarf:"Barnard's Star moves 10.4″ per year, the fastest of any star. Watch it slide upward (north) between seasons along the gold dashed track, while background stars stay put.",
-    tdwarf:"ε Indi B is a pair of brown dwarfs. They are brightest in the windows between methane bands, so try <b>3-colour</b>: they look different from normal stars.",
-    ydwarf:"WISE 0855 is so cold that it only shows up at 4–5 µm, so only detectors D5–D6 are selected. Look for the faint dot that moves along the gold track. Try <b>Difference</b>.",
-    ttauri:"RW Aur is a young star whose dusty disc makes it dim and brighten irregularly. Check the <b>Light curve</b> tab and try <b>Difference</b> to see it change.",
-    mira:"R Dra is a pulsating giant (period 246 days). It sits near the ecliptic pole, so SPHEREx sees it many times a year. Open the <b>Light curve</b> to watch it pulse.",
+    mdwarf:"<b>Barnard's Star</b> is the fastest-moving star in our sky. Press play: the bright star in the middle slides up (north) a little each visit, following the gold dotted line, while the stars around it stay put.",
+    tdwarf:"<b>ε Indi B</b> is a pair of brown dwarfs: objects too small to be stars. Methane in their air makes their colours unusual, so try <b>Colours</b>. They move 4.7″ a year along the gold line.",
+    ydwarf:"<b>WISE 0855</b> is the coldest brown dwarf known, about room temperature. It only glows at the longest infrared colours, so only those are shown. It is faint: press <b>What changed</b> and look for the orange + blue pair on the gold line.",
+    ttauri:"<b>RW Aurigae</b> is a baby star wrapped in dust. Clouds of dust pass in front of it, so it dims and brightens. Open <b>Brightness over time</b> below, or press <b>What changed</b>.",
+    mira:"<b>R Draconis</b> is a giant star that swells and shrinks every 246 days, changing brightness as it does. Press play and watch the middle star, then open <b>Brightness over time</b> below.",
   };
-  const how = S.disp==="diff"? "Orange = brighter than the reference, blue = fainter. Moving objects leave orange/blue pairs."
-    : S.disp==="rgb"? "Blue = 0.75–1.6 µm, green = 1.6–3.8 µm, red = 3.8–5 µm."
-    : "Stacked infrared image. North is up and east is left.";
-  $("caption").innerHTML = t? `<b>${esc(t.name||"Custom target")}.</b> ${p? tips[p.kind] : "The gold cross-hair marks where the target should be on each frame's date."} <br><span style="color:var(--faint)">${how} Press <span class="kbd">space</span> to play.</span>`
-    : `<b>Welcome.</b> Pick one of the five challenge targets to see SPHEREx's view of it change over time. New here? Open <a href="#" data-about="use">How to use</a>.`;
+  const how = S.disp==="diff"? "You're seeing <b>what changed</b>: black = no change, orange = brighter than the comparison frame, blue = fainter. Something that moved leaves blue where it was and orange where it is now."
+    : S.disp==="rgb"? "You're seeing <b>colours</b>: blue = shortest infrared (0.75–1.6 µm), green = middle (1.6–3.8 µm), red = longest (3.8–5 µm)."
+    : "You're seeing the <b>picture</b>: SPHEREx's infrared view on each date. Like looking up at the sky: north is at the top, east on the left.";
+  $("caption").innerHTML = t? `${p? tips[p.kind] : `<b>${esc(t.name||"Your target")}.</b> The gold cross-hair marks where it should be on each date.`}<span class="how">${how}</span>`
+    : `Pick one of the objects above to start. New here? Take the <a href="#" id="capTour">30-second tour</a>.`;
+  $("capTour")?.addEventListener("click", e=>{ e.preventDefault(); startTour(); });
 }
 
 /* ============================ load orchestration ============================ */
 function setStatus(msg){ $("status").textContent=msg; }
 function setBanner(msg, kind){ const b=$("banner"); b.style.display= msg?"block":"none"; b.innerHTML=msg||""; b.className = "w" + (kind? " "+kind : ""); }
 function busy(on){ $("spinner").style.display = on? "block":"none"; }
-function setBadge(){ const m={sim:["SIMULATED","sim"], demo:["DEMO · REAL SPHEREx","demo"], live:["LIVE · IRSA","live"]}[S.src]; $("modeBadge").textContent=m[0]; $("modeBadge").className=m[1]; }
+function setBadge(){ const m={sim:["SIMULATED SKY","sim"], demo:["REAL DATA · SAVED","demo"], live:["REAL DATA · LIVE","live"]}[S.src]; $("modeBadge").textContent=m[0]; $("modeBadge").className=m[1]; }
 function readTarget(){
   const ra=parseAngle($("ra").value,true), dec=parseAngle($("dec").value,false);
   if(!Number.isFinite(ra)||!Number.isFinite(dec)) throw new Error("Enter a valid RA and Dec.");
@@ -1290,7 +1358,7 @@ async function load(){
       : "The demo pack hasn't been built yet (run <code>python3 tools/fetch_demo.py</code>). Fetching live from IRSA instead.","info");
   } else if(!$("banner").classList.contains("info")) setBanner("");
   const useDemo = S.src==="demo" && demoSlug;
-  $("modeBadge").textContent = useDemo? "DEMO · REAL SPHEREx" : "LIVE · IRSA"; $("modeBadge").className = useDemo? "demo":"live";
+  $("modeBadge").textContent = useDemo? "REAL DATA · SAVED" : "REAL DATA · LIVE"; $("modeBadge").className = useDemo? "demo":"live";
   busy(true);
   let rows, man=null;
   try{
@@ -1324,7 +1392,7 @@ async function load(){
     man? `<span>Demo pack</span><span>built ${esc(man.generated.slice(0,10))} · ${esc((man.releases||[]).join(", "))} · ${man.archive_exposures} in archive</span>` : "");
 }
 function loadSim(t, why){
-  $("modeBadge").textContent="SIMULATED"; $("modeBadge").className="sim"; // also when live/demo fell back to simulation
+  $("modeBadge").textContent="SIMULATED SKY"; $("modeBadge").className="sim"; // also when live/demo fell back to simulation
   setBanner(why || "You're viewing a <b>simulated</b> sky built from the target's real motion, parallax and SPHEREx's real survey schedule. The dashed line in the Spectrum tab is the input model: the measured points should land on it.", why? "err" : "");
   const {exps, gaia, wise, windows} = simulate(t); S.exps=exps; S.gaia=gaia; S.wise=wise;
   if(!exps.length){ S.loading=false; setStatus("SPHEREx hasn't observed this position yet."); render(); return; }
@@ -1429,15 +1497,15 @@ function applyPreset(p){
 function syncFov(){ const v=+$("fov").value; $("fovVal").textContent = `${v}′ × ${v}′`;
   const N=Math.round(v/60/S.scaleDeg); $("fovNote").textContent = `${N}×${N} px. ${S.src==="live"? `About ${(N*1.25)**2*16/1e6*20 < 1 ? "<1" : ((N*1.25)**2*16/1e6*20).toFixed(0)} MB per 20 exposures.` : ""} Bigger fields catch faster movers.`; }
 function srcNote(){
-  $("srcNote").innerHTML = S.src==="demo"? "Real SPHEREx cutouts bundled with the app. Loads instantly, even offline."
-    : S.src==="live"? "Fetches the newest SPHEREx data from NASA/IPAC IRSA. Works best with <code>server.py</code> running."
-    : "A synthetic sky with the real survey schedule and real motions, for offline demos and for checking results.";
+  $("srcNote").innerHTML = S.src==="demo"? "Real SPHEREx images saved with the app. Instant, works offline."
+    : S.src==="live"? "Downloads the newest SPHEREx images from NASA's archive (IRSA). Takes a minute or two; needs <code>server.py</code>."
+    : "A made-up sky with the real survey schedule and real star motions. For offline demos and for checking the measurements.";
   syncFov();
 }
 function dispNote(){
-  $("dispNote").innerHTML = S.disp==="rgb"? "Blue = D1–D2, green = D3–D4, red = D5–D6. Cold brown dwarfs look red."
-    : S.disp==="diff"? "Each frame minus a reference. Orange = brighter, blue = fainter. Movers show up as orange/blue pairs."
-    : "The selected detectors, sky-subtracted and stacked into each frame.";
+  $("dispNote").innerHTML = S.disp==="rgb"? "Colours: blue = D1–D2, green = D3–D4, red = D5–D6."
+    : S.disp==="diff"? "What changed: each frame minus the comparison chosen above."
+    : "Picture: the selected detectors, sky-subtracted and stacked into each frame.";
 }
 function openAbout(section){
   const d=$("about"); [...$("aboutTabs").children].forEach(b=>b.classList.toggle("on", b.dataset.s===section));
@@ -1448,6 +1516,8 @@ function init(){
   initSky();
   const pr=$("presets"); for(const p of PRESETS){ const b=document.createElement("button"); b.className="preset"; b.dataset.name=p.name;
     b.innerHTML=`<b>${esc(p.name)}</b><span>${esc(p.tag)}</span>`; b.onclick=()=>applyPreset(p); pr.appendChild(b); }
+  { const b=document.createElement("button"); b.className="preset custom"; b.innerHTML="<b>Somewhere else…</b><span>Name or coordinates</span>";
+    b.onclick=()=>{ window.openAdvanced(true); setTimeout(()=>$("name").focus(),260); }; pr.appendChild(b); }
   const dets=$("dets"); for(const d of DETS){ const l=document.createElement("label"); l.title=`${d.lo}–${d.hi} µm, R≈${d.R}`; l.innerHTML=`<input type="checkbox" data-d="${d.d}">D${d.d} <small>${d.lo}–${d.hi}</small>`; dets.appendChild(l); }
   $("bandBar").innerHTML = DETS.map((d,i)=>`<div style="background:${DET_COLORS[i]}" title="D${d.d}: ${d.lo}–${d.hi} µm">D${d.d}</div>`).join("");
   const fromURL = readURL();
@@ -1464,7 +1534,7 @@ function init(){
   $("clip").oninput=()=>{ $("clipVal").textContent=(+$("clip").value).toFixed(2); S.scale=null; render(); }; $("clipVal").textContent=$("clip").value;
   for(const id of ["perFrame","ovTarget","ovGaia","ovWise","ovCompass","ovNan"]) $(id).onchange=()=>{ S.scale=null; render(); };
   $("smooth").onchange=()=>$("img").classList.toggle("smooth",$("smooth").checked);
-  $("goBtn").onclick=()=>load();
+  $("goBtn").onclick=()=>{ window.openAdvanced(false); load(); };
   $("resolveBtn").onclick=async()=>{ const n=$("name").value.trim(); if(!n) return; setStatus(`Looking up “${n}”…`);
     try{ const r=await resolveName(n); $("ra").value=r.ra.toFixed(7); $("dec").value=r.dec.toFixed(7); $("pmra").value=r.pmra; $("pmdec").value=r.pmdec; $("plx").value=r.plx; $("epoch").value=2000; setStatus(`Found ${n}. Press Load images.`); }
     catch(e){ setStatus(`Couldn't look up “${n}” (${e.message}). Enter coordinates by hand.`); } };
@@ -1488,6 +1558,14 @@ function init(){
   $("specLog").onchange=drawSpectrum; $("specTrack").onchange=updatePhot; $("specApcor").onchange=updatePhot;
   $("tabs").onclick=e=>{ const t=e.target.dataset?.t; if(t) activateTab(t); };
   $("aladinBtn").onclick=openAladin;
+  const adv=(open)=>{ $("adv").classList.toggle("open",open); $("advShade").classList.toggle("open",open); $("advBtn").classList.toggle("on",open); };
+  $("advBtn").onclick=()=>adv(!$("adv").classList.contains("open")); $("advClose").onclick=()=>adv(false); $("advShade").onclick=()=>adv(false);
+  $("modeBadge").onclick=()=>adv(true);
+  window.openAdvanced=adv;
+  $("tourBtn").onclick=startTour; $("tourNext").onclick=()=>tourGo(tourI+1); $("tourSkip").onclick=endTour;
+  // degree ticks around the dome's rim, like a planetarium horizon ring
+  $("rimTicks").innerHTML = Array.from({length:72},(_,i)=>{ const a=i*5*D2R, r1=i%18===0? 44.2 : i%6===0? 44.8 : 45.4, r2=46.2;
+    return `<line x1="${(r1*Math.sin(a)).toFixed(2)}" y1="${(-r1*Math.cos(a)).toFixed(2)}" x2="${(r2*Math.sin(a)).toFixed(2)}" y2="${(-r2*Math.cos(a)).toFixed(2)}"/>`; }).join("");
   $("hips").onchange=openAladin;
   $("cubeSlice").oninput=applySlice; cubeLabel();
   document.addEventListener("click", e=>{ const a=e.target.closest("[data-about]"); if(a){ e.preventDefault(); openAbout(a.dataset.about); } });
@@ -1497,14 +1575,42 @@ function init(){
   window.addEventListener("keydown", e=>{ if(["INPUT","SELECT","TEXTAREA"].includes(e.target.tagName) || $("about").open && e.key!=="Escape") return;
     if(e.key===" "){ e.preventDefault(); S.playing?stop():play(); } else if(e.key==="ArrowRight"){stop();step(1);} else if(e.key==="ArrowLeft"){stop();step(-1);}
     else if(e.key==="d"||e.key==="D") setDisp("diff"); else if(e.key==="c"||e.key==="C") setDisp("rgb"); else if(e.key==="m"||e.key==="M") setDisp("gray");
-    else if(e.key==="r"||e.key==="R") setRef(); else if(e.key==="?") openAbout("use"); });
+    else if(e.key==="r"||e.key==="R") setRef(); else if(e.key==="?") openAbout("use");
+    else if(e.key==="Escape"){ window.openAdvanced(false); endTour(); } });
   window.addEventListener("resize", ()=>{ drawOverlay(); drawSpectrum(); drawLC(); });
   loadDemoIndex().then(idx=>{ const n=Object.values(idx.targets||{}).filter(t=>t.files>0);
     $("demoInfo").textContent = n.length? `This copy holds ${n.reduce((s,t)=>s+t.files,0)} cutouts of ${n.length} targets, built ${String(idx.generated||"").slice(0,10)}.` : "This copy hasn't been built yet.";
     if(!n.length && S.src==="demo" && !new URLSearchParams(location.search).get("src")){ S.src="live"; syncers.src(); srcNote(); }
     if(fromURL){ syncers.src(); syncers.group(); syncers.disp(); dispNote(); srcNote(); load(); }
-    else applyPreset(PRESETS[0]);
+    else { applyPreset(PRESETS[0]); let seen=false; try{ seen=localStorage.getItem("blinkTourDone")==="1"; }catch(e){} if(!seen) setTimeout(startTour, 900); }
   });
+}
+/* ============================ guided tour ============================ */
+const TOUR = [
+  {sel:"#presets", title:"1 · Pick something to look at", text:"Five famous objects from the NASA challenge. Each one shows something different: a fast star, a cold brown dwarf, stars that change brightness."},
+  {sel:".domewrap", title:"2 · This is your sky dome", text:"SPHEREx's real infrared images of that spot, as if you were looking straight up at it. North is at the top and east on the left. The gold cross-hair marks your object."},
+  {sel:"#player", title:"3 · Press play", text:"Each frame is a different visit, months apart. Watch the object creep along the gold dotted line while the background stars stay still. Space bar plays and pauses; arrow keys step."},
+  {sel:"#dispSeg", title:"4 · Three ways to look", text:"Picture: the plain view. Colours: blue = short infrared, red = long. What changed: hides everything that stayed the same, so movers pop out as orange + blue pairs."},
+  {sel:"#right", title:"5 · Measure it", text:"Its brightness in each of SPHEREx's 102 colours, how it changes over time, and NASA's whole-sky SPHEREx map of the area."},
+  {sel:"#advBtn", title:"6 · Everything else", text:"Your own coordinates, live data from NASA's archive, field of view, and every other setting live under Advanced."},
+];
+let tourI=0;
+function startTour(){ stop(); $("tour").classList.add("on"); tourGo(0); }
+function endTour(){ $("tour").classList.remove("on"); try{ localStorage.setItem("blinkTourDone","1"); }catch(e){} }
+function tourGo(i){
+  if(i>=TOUR.length) return endTour();
+  tourI=i; const st=TOUR[i], el=document.querySelector(st.sel); if(!el) return tourGo(i+1);
+  el.scrollIntoView({block:"center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches? "auto":"smooth"});
+  setTimeout(()=>{
+    const r=el.getBoundingClientRect(), pad=8, h=$("tourHole"), c=$("tourCard");
+    Object.assign(h.style,{left:(r.left-pad)+"px", top:(r.top-pad)+"px", width:(r.width+2*pad)+"px", height:(r.height+2*pad)+"px"});
+    $("tourTitle").textContent=st.title; $("tourText").textContent=st.text; $("tourStep").textContent=`${i+1} / ${TOUR.length}`;
+    $("tourNext").textContent = i===TOUR.length-1? "Done" : "Next";
+    const cw=c.offsetWidth, ch=c.offsetHeight, below=r.bottom+pad+14+ch < innerHeight;
+    c.style.left=Math.max(16, Math.min(innerWidth-cw-16, r.left+r.width/2-cw/2))+"px";
+    c.style.top=(below? r.bottom+pad+14 : Math.max(16, r.top-pad-14-ch))+"px";
+    $("tourNext").focus();
+  }, 350);
 }
 function activateTab(t){ [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.t===t)); document.querySelectorAll(".tab").forEach(d=>d.classList.toggle("on", d.id==="tab-"+t)); if(t==="spec") drawSpectrum(); if(t==="lc") drawLC(); if(t==="ctx") openAladin(); }
 // Aladin Lite (CDS), pinned to a released version on jsDelivr. (CDS's own ".../v3/latest/aladin.js" URL now returns 404.)

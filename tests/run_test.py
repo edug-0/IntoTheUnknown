@@ -44,7 +44,7 @@ with sync_playwright() as p:
         pg.screenshot(path=f"{OUT}/live_{mode}.png")
     pg.click("#tabs button[data-t=exp]"); pg.wait_for_timeout(200); pg.screenshot(path=f"{OUT}/live_table.png")
     # Simulated mode, each preset
-    pg.click("#srcSeg button[data-v=sim]"); pg.click("#dispSeg button[data-v=gray]")
+    pg.click("#advBtn"); pg.wait_for_timeout(300); pg.click("#srcSeg button[data-v=sim]"); pg.click("#advClose"); pg.wait_for_timeout(300); pg.click("#dispSeg button[data-v=gray]")
     for name in ["WISE 0855", "RW Aurigae"]:
         pg.click(f".preset[data-name='{name}']")
         pg.wait_for_function("document.getElementById('status').textContent.includes('Simulated')", timeout=30000)
