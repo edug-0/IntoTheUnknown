@@ -61,3 +61,8 @@ Owner: dflow11
 Decision: `query_gaia_cone` tries the ESA Gaia TAP, then ARI Heidelberg's TAP with the same ADQL. MAST is not used. POINT and CIRCLE carry `'ICRS'`, and results that hit MAXREC are refused.
 Why: astroquery's `Catalogs.query_region(catalog="Gaia", version=3)` warns and silently returns Gaia DR2 (epoch 2015.5). ARI returned the same 1976 rows as ESA with identical values. ARI's ADQL parser rejects POINT/CIRCLE without `'ICRS'`. Both servers truncate CSV silently at MAXREC.
 Owner: ompatel
+
+## 2026-11-14 14:30 - Gaia results via VOTable; WISE 0855 anchored on CatWISE2020
+Decision: `query_gaia_cone` requests VOTable and refuses any result with QUERY_STATUS=OVERFLOW or as many rows as MAXREC. WISE 0855 uses the CatWISE2020 position at MJD 57170 with literature pm and parallax.
+Why: CSV gives no truncation signal and `TOP n` sets no OVERFLOW; both ESA and ARI set OVERFLOW at MAXREC (checked live). The designation-epoch guess for WISE 0855 was unverified; CatWISE documents its epoch, and the literature pm matches the independent AllWISE position (0.4") better than CatWISE's own pm (1.9").
+Owner: ompatel

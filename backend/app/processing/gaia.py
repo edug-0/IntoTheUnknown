@@ -7,13 +7,14 @@ already absorbed; `transform_to(GCRS)` would add ~20" of aberration (about 3 px)
 
 from __future__ import annotations
 
-import csv
 import io
 import logging
 import math
 import os
+import threading
 import time
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 import astropy.units as u
@@ -25,6 +26,7 @@ from astropy.coordinates import (
     UnitSphericalRepresentation,
     get_body_barycentric,
 )
+from astropy.io import votable
 from astropy.time import Time
 from erfa import ErfaWarning
 
@@ -157,9 +159,14 @@ GAIA_TAP_ENDPOINTS = (
     ("ESA", "https://gea.esac.esa.int/tap-server/tap/sync"),
     ("ARI", "https://gaia.ari.uni-heidelberg.de/tap/sync"),
 )
-# Both servers truncate silently at MAXREC, so we ask for one more row than we accept.
+# Sent as MAXREC. A truncated result is detected from the VOTable QUERY_STATUS=OVERFLOW
+# (both servers set it, whoever's limit cut the result) or from reaching this length.
 GAIA_MAX_ROWS = 50_000
 MAX_RADIUS_DEG = 1.0
+
+# Workers for the TAP calls, so a stalled read can't hold the caller past its deadline.
+# An abandoned worker stops at its next chunk, or after one read timeout if stalled.
+_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="gaia-tap")
 
 
 class GaiaUnavailable(RuntimeError):
@@ -183,45 +190,62 @@ def _timeout(timeout_s: float | None) -> float:
     return timeout_s
 
 
-def _tap_sync(url: str, adql: str, timeout_s: float) -> str:
-    """POST one sync query, with a wall-clock bound on the whole download."""
-    deadline = time.monotonic() + timeout_s
+def _parse_votable(body: bytes) -> tuple[np.ndarray, bool]:
+    """TAP VOTable -> (rows as GAIA_DTYPE, overflow flag)."""
+    try:
+        vot = votable.parse(io.BytesIO(body), verify="ignore")
+        infos = list(vot.infos) + [i for res in vot.resources for i in res.infos]
+        status = {i.value for i in infos if i.name == "QUERY_STATUS"}
+        if "ERROR" in status:
+            msg = next(i.content for i in infos if i.value == "ERROR")
+            raise _EndpointError(f"TAP error: {(msg or '').strip()[:300]}")
+        tab = vot.get_first_table().to_table(use_names_over_ids=True)
+    except _EndpointError:
+        raise
+    except Exception as e:  # anything unparseable is a bad response, not a crash
+        raise _EndpointError(f"bad VOTable: {type(e).__name__}: {e}") from e
+    if tuple(tab.colnames) != GAIA_COLUMNS:
+        raise _EndpointError(f"unexpected columns: {tab.colnames}")
+    ids = np.ma.asarray(tab["source_id"])
+    if np.ma.is_masked(ids):
+        raise _EndpointError("null source_id")
+    out = np.empty(len(tab), dtype=GAIA_DTYPE)
+    out["source_id"] = ids.filled(0)
+    for c in GAIA_COLUMNS[1:]:
+        out[c] = np.ma.asarray(tab[c], dtype=float).filled(np.nan)
+    return out, "OVERFLOW" in status
+
+
+def _fetch(url: str, adql: str, timeout_s: float, stop: threading.Event):
     data = {
         "REQUEST": "doQuery",
         "LANG": "ADQL",
-        "FORMAT": "csv",
-        "MAXREC": str(GAIA_MAX_ROWS + 1),
+        "FORMAT": "votable",
+        "MAXREC": str(GAIA_MAX_ROWS),
         "QUERY": adql,
     }
+    # timeout bounds connect and each read; _fetch_within bounds the whole call.
     with requests.post(url, data=data, timeout=timeout_s, stream=True) as r:
         if r.status_code != 200:
             raise _EndpointError(f"HTTP {r.status_code}: {r.text[:300].strip()}")
         chunks = []
         for chunk in r.iter_content(chunk_size=1 << 16):
+            if stop.is_set():
+                raise _EndpointError("abandoned after the deadline")
             chunks.append(chunk)
-            if time.monotonic() > deadline:
-                raise _EndpointError(f"response not complete within {timeout_s:g}s")
-    return b"".join(chunks).decode("utf-8")
+    return _parse_votable(b"".join(chunks))
 
 
-def _parse_csv(text: str) -> np.ndarray:
-    rows = csv.reader(io.StringIO(text))
-    header = next(rows, None)
-    if header is None or tuple(h.strip() for h in header) != GAIA_COLUMNS:
-        raise _EndpointError(f"unexpected header: {text[:200].strip()!r}")
-    out = []
-    for n, row in enumerate(rows, start=2):
-        if not row:
-            continue
-        if len(row) != len(GAIA_COLUMNS):
-            raise _EndpointError(f"line {n}: expected {len(GAIA_COLUMNS)} fields")
-        try:
-            out.append(
-                (int(row[0]),) + tuple(float(v) if v else np.nan for v in row[1:])
-            )
-        except ValueError as e:
-            raise _EndpointError(f"line {n}: {e}") from e
-    return np.array(out, dtype=GAIA_DTYPE)
+def _fetch_within(url: str, adql: str, timeout_s: float) -> tuple[np.ndarray, bool]:
+    """Connect, download and parse in a worker; give up after timeout_s wall-clock."""
+    stop = threading.Event()
+    future = _POOL.submit(_fetch, url, adql, timeout_s, stop)
+    try:
+        return future.result(timeout=timeout_s)
+    except TimeoutError:
+        stop.set()
+        future.cancel()
+        raise _EndpointError(f"no complete response within {timeout_s:g}s") from None
 
 
 def query_gaia_cone(
@@ -230,8 +254,10 @@ def query_gaia_cone(
     """Gaia DR3 sources with G < 20.5 within radius_deg of (ra, dec), at J2016.0.
 
     Returns a structured array (`GAIA_DTYPE`), NaN where Gaia has no value. Tries ESA,
-    then ARI; each gets `timeout_s` (env `GAIA_TIMEOUT_S`, default 30 s), so the worst
-    case is about twice that. Raises `GaiaUnavailable` if no complete result comes back.
+    then ARI. Each endpoint gets at most `timeout_s` of wall-clock time for connect,
+    download and parse (env `GAIA_TIMEOUT_S`, default 30 s), so the call returns or
+    raises within about 2 x timeout_s. Raises `GaiaUnavailable` unless a complete,
+    untruncated result comes back.
     """
     ra, dec, radius_deg = float(ra) % 360.0, float(dec), float(radius_deg)
     if not (
@@ -245,18 +271,20 @@ def query_gaia_cone(
     for name, url in GAIA_TAP_ENDPOINTS:
         t0 = time.monotonic()
         try:
-            cat = _parse_csv(_tap_sync(url, adql, timeout_s))
-        except (requests.RequestException, _EndpointError, UnicodeDecodeError) as e:
+            cat, overflow = _fetch_within(url, adql, timeout_s)
+            if len(cat) >= GAIA_MAX_ROWS:
+                raise GaiaUnavailable(
+                    f"{GAIA_MAX_ROWS} or more Gaia sources in r={radius_deg:.3f} deg; "
+                    "use a smaller field of view"
+                )
+            if overflow:  # the server's own limit, below ours: another may do better
+                raise _EndpointError(f"server truncated the result at {len(cat)} rows")
+        except (OSError, _EndpointError) as e:  # requests' exceptions are OSErrors
             errors.append(f"{name}: {type(e).__name__}: {e}")
             log.warning(
                 "Gaia %s failed after %.1fs: %s", name, time.monotonic() - t0, e
             )
             continue
-        if len(cat) > GAIA_MAX_ROWS:
-            raise GaiaUnavailable(
-                f"more than {GAIA_MAX_ROWS} Gaia sources in r={radius_deg:.3f} deg; "
-                "use a smaller field of view"
-            )
         log.info("Gaia %s: %d rows in %.1fs", name, len(cat), time.monotonic() - t0)
         return cat
     raise GaiaUnavailable(
@@ -275,14 +303,18 @@ class PresetAstrometry:
     pmdec: float
     parallax: float  # mas
     radial_velocity: float  # km/s, NaN if unknown
-    ref_epoch: float = 2016.0  # Julian year, TCB
+    ref_epoch: Time = GAIA_EPOCH  # epoch of ra, dec
     source_id: int | None = None  # Gaia DR3, None if not in Gaia
 
 
-# APPROXIMATE: WISE 0855-0714 is not in Gaia. Its designation position, at an assumed
-# epoch of ~2010.5, with literature pm and parallax. Gives ~(133.7599, -7.2422) at
-# 2026.0 (docs/TARGETS.md). Replace with a measured position when SIMBAD is back.
-_WISE0855 = SkyCoord("08h55m10.831s", "-07d14m42.53s", frame="icrs")
+# WISE 0855-0714 is not in Gaia. Position: CatWISE2020 (IRSA table catwise_2020),
+# source J085507.96-071439.3, ra_pm/dec_pm at epoch MJD 57170 (2015.405) per
+# https://irsa.ipac.caltech.edu/data/WISE/CatWISE/gator_docs/catwise_colDescriptions.html
+# CatWISE splits this fast mover into several entries; this one has the smallest pm
+# errors. Its pm (-8021, +1036 mas/yr) misses the AllWISE 2010.59 position by 1.9",
+# so pm stays the literature (-8120, +680), which lands 0.4" from it. Parallax ~439 mas
+# is literature too (we believe Kirkpatrick et al. 2021, ApJS 253, 7; unconfirmed).
+_CATWISE_EPOCH = Time(57170.0, format="mjd", scale="tdb")
 
 # Gaia DR3 at J2016.0 (docs/TARGETS.md), full precision from the ESA TAP on 2026-11-14.
 PRESETS: dict[str, PresetAstrometry] = {
@@ -305,13 +337,13 @@ PRESETS: dict[str, PresetAstrometry] = {
         source_id=6412596012146801152,
     ),
     "wise0855": PresetAstrometry(
-        ra=float(_WISE0855.ra.deg),
-        dec=float(_WISE0855.dec.deg),
+        ra=133.783924,
+        dec=-7.2443404,
         pmra=-8120.0,
         pmdec=680.0,
         parallax=439.0,
         radial_velocity=np.nan,
-        ref_epoch=2010.5,
+        ref_epoch=_CATWISE_EPOCH,
     ),
     "rw_aur": PresetAstrometry(
         ra=76.956081196,
@@ -339,7 +371,6 @@ def preset_centre(target_id: str, t: Time) -> tuple[float, float]:
     if target_id not in PRESETS:
         raise KeyError(f"unknown target {target_id!r}; known: {sorted(PRESETS)}")
     p = PRESETS[target_id]
-    ref = Time(p.ref_epoch, format="jyear", scale="tcb")
     return predict_radec(
-        p.ra, p.dec, p.pmra, p.pmdec, p.parallax, p.radial_velocity, t, ref
+        p.ra, p.dec, p.pmra, p.pmdec, p.parallax, p.radial_velocity, t, p.ref_epoch
     )

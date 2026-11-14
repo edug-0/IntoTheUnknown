@@ -3,6 +3,7 @@
 No network: IERS downloads are off and every HTTP call is mocked.
 """
 
+import threading
 import time
 
 import numpy as np
@@ -109,8 +110,23 @@ def test_preset_centre_matches_targets_md(target, expected):
     assert sep_arcsec(gaia.preset_centre(target, T2026), expected) < 1.0
 
 
-def test_preset_centre_wise0855_approximate():
-    assert sep_arcsec(gaia.preset_centre("wise0855", T2026), (133.7599, -7.2422)) < 5.0
+# WISE 0855 catalogue measurements (IRSA, 2026-11-14). preset_centre includes the
+# 0.44" parallax; the catalogue fits average over it, hence the tolerances.
+CATWISE_0855 = (133.783924, -7.2443404)  # J085507.96-071439.3 ra_pm, dec_pm
+CATWISE_EPOCH = Time(57170.0, format="mjd", scale="tdb")
+ALLWISE_0855 = (133.7947597, -7.2451456)  # J085510.74-071442.5 ra, dec
+ALLWISE_EPOCH = Time(55412.32635051, format="mjd", scale="tdb")  # w2mjdmean
+
+
+def test_preset_centre_wise0855_matches_catwise_at_its_epoch():
+    got = gaia.preset_centre("wise0855", CATWISE_EPOCH)
+    assert sep_arcsec(got, CATWISE_0855) < 0.6
+
+
+def test_preset_centre_wise0855_matches_independent_allwise_epoch():
+    # 4.8 yr earlier: checks the proper motion, not just the anchor position.
+    got = gaia.preset_centre("wise0855", ALLWISE_EPOCH)
+    assert sep_arcsec(got, ALLWISE_0855) < 1.0
 
 
 def test_preset_centre_moves_with_epoch():
@@ -130,24 +146,52 @@ def test_cone_radius():
 
 # --- Cone query (mocked HTTP) --------------------------------------------------------
 
-HEADER = "source_id,ra,dec,pmra,pmdec,parallax,radial_velocity,phot_g_mean_mag\n"
-CSV_OK = (
-    HEADER
-    + "4472832130942575872,269.4485025,4.7394201,-801.55,10362.39,546.98,-110.47,8.19\n"
-    + "4472808869388202880,269.3849161,4.6956692,-4.537,-5.644,0.310,,20.18\n"
-    + "4472811824325764992,269.3704051,4.7068290,,,,,20.41\n"
+ROWS = [
+    ("4472832130942575872", "269.4485025", "4.7394201", "-801.55", "10362.39", "546.98",
+     "-110.47", "8.19"),
+    ("4472808869388202880", "269.3849161", "4.6956692", "-4.537", "-5.644", "0.310", "",
+     "20.18"),
+    ("4472811824325764992", "269.3704051", "4.7068290", "", "", "", "", "20.41"),
+]  # fmt: skip
+TYPES = {"source_id": "long", "radial_velocity": "float", "phot_g_mean_mag": "float"}
+
+
+def votable(rows=ROWS, status_after=None, columns=gaia.GAIA_COLUMNS) -> str:
+    """A TAP result like ESA's and ARI's; status_after mimics the trailing INFO."""
+    fields = "".join(
+        f'<FIELD name="{c}" datatype="{TYPES.get(c, "double")}"/>' for c in columns
+    )
+    trs = "".join("<TR>" + "".join(f"<TD>{v}</TD>" for v in r) + "</TR>" for r in rows)
+    post = f'<INFO name="QUERY_STATUS" value="{status_after}"/>' if status_after else ""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">'
+        '<RESOURCE type="results"><INFO name="QUERY_STATUS" value="OK"/>'
+        f"<TABLE>{fields}<DATA><TABLEDATA>{trs}</TABLEDATA></DATA></TABLE>{post}"
+        "</RESOURCE></VOTABLE>"
+    )
+
+
+TAP_ERROR = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+    '<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">'
+    '<RESOURCE type="results"><INFO name="QUERY_STATUS" value="ERROR">'
+    "Incorrect ADQL query</INFO></RESOURCE></VOTABLE>"
 )
 
 
 class FakeResponse:
-    def __init__(self, body: str, status: int = 200, delay_s: float = 0.0):
+    def __init__(self, body: str, status=200, delay_s=0.0, stall=None):
         self.status_code = status
         self.text = body
         self._body = body.encode()
         self._delay_s = delay_s
+        self._stall = stall  # threading.Event: a read that blocks until it is set
 
     def iter_content(self, chunk_size=1):
         for i in range(0, len(self._body), 64):
+            if self._stall is not None and i:
+                self._stall.wait(5)
             time.sleep(self._delay_s)
             yield self._body[i : i + 64]
 
@@ -173,16 +217,22 @@ def fake_post(monkeypatch, *outcomes):
     return calls
 
 
-def test_query_parses_csv_with_nan_for_missing(monkeypatch):
+def query(timeout_s=5):
+    return gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=timeout_s)
+
+
+def test_query_parses_votable_with_nan_for_missing(monkeypatch):
     monkeypatch.setenv("GAIA_TIMEOUT_S", "7")
-    calls = fake_post(monkeypatch, FakeResponse(CSV_OK))
+    calls = fake_post(monkeypatch, FakeResponse(votable()))
     cat = gaia.query_gaia_cone(269.44627, 4.76820, 0.1)
 
     assert len(calls) == 1 and calls[0][0] == gaia.GAIA_TAP_ENDPOINTS[0][1]
     assert calls[0][1]["timeout"] == 7.0
-    adql = calls[0][1]["data"]["QUERY"]
-    assert "FROM gaiadr3.gaia_source" in adql and "phot_g_mean_mag < 20.5" in adql
-    assert "CIRCLE('ICRS',269.44627000,4.76820000,0.10000000)" in adql
+    data = calls[0][1]["data"]
+    assert data["FORMAT"] == "votable" and data["MAXREC"] == str(gaia.GAIA_MAX_ROWS)
+    assert "FROM gaiadr3.gaia_source" in data["QUERY"]
+    assert "phot_g_mean_mag < 20.5" in data["QUERY"]
+    assert "CIRCLE('ICRS',269.44627000,4.76820000,0.10000000)" in data["QUERY"]
 
     assert cat.dtype == gaia.GAIA_DTYPE and len(cat) == 3
     assert cat["source_id"][0] == 4472832130942575872
@@ -195,43 +245,73 @@ def test_query_parses_csv_with_nan_for_missing(monkeypatch):
 
 
 def test_query_falls_back_to_ari(monkeypatch):
-    calls = fake_post(
-        monkeypatch, requests.ConnectionError("reset"), FakeResponse(CSV_OK)
-    )
-    cat = gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=5)
+    ok = FakeResponse(votable())
+    calls = fake_post(monkeypatch, requests.ConnectionError("reset"), ok)
+    assert len(query()) == 3
     assert [c[0] for c in calls] == [url for _, url in gaia.GAIA_TAP_ENDPOINTS]
-    assert len(cat) == 3
 
 
 @pytest.mark.parametrize("exc", [requests.Timeout, requests.ConnectionError])
 def test_query_network_failure_raises_gaia_unavailable(monkeypatch, exc):
     fake_post(monkeypatch, exc("boom"), exc("boom"))
     with pytest.raises(gaia.GaiaUnavailable, match="ESA.*ARI"):
-        gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=5)
+        query()
 
 
 def test_query_never_returns_garbage(monkeypatch):
-    bad_row = HEADER + "4472832130942575872,269.44,4.73\n"
-    fake_post(
-        monkeypatch, FakeResponse(bad_row), FakeResponse("<html>oops</html>", 503)
-    )
-    with pytest.raises(gaia.GaiaUnavailable, match="HTTP 503"):
-        gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=5)
+    fake_post(monkeypatch, FakeResponse("<html>oops</html>"), FakeResponse("busy", 503))
+    with pytest.raises(gaia.GaiaUnavailable, match="ESA.*bad VOTable.*ARI.*HTTP 503"):
+        query()
 
 
-def test_query_slow_download_hits_wall_clock_timeout(monkeypatch):
-    slow = FakeResponse(CSV_OK, delay_s=0.03)  # 5 chunks, ~0.15 s
-    fake_post(monkeypatch, slow, slow)
-    with pytest.raises(gaia.GaiaUnavailable, match="not complete within"):
-        gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=0.05)
+def test_query_rejects_wrong_columns_and_tap_errors(monkeypatch):
+    short = votable(rows=[r[:7] for r in ROWS], columns=gaia.GAIA_COLUMNS[:7])
+    fake_post(monkeypatch, FakeResponse(short), FakeResponse(TAP_ERROR))
+    with pytest.raises(gaia.GaiaUnavailable, match="unexpected columns.*TAP error"):
+        query()
 
 
-def test_query_truncated_result_raises(monkeypatch):
-    monkeypatch.setattr(gaia, "GAIA_MAX_ROWS", 2)
-    calls = fake_post(monkeypatch, FakeResponse(CSV_OK))
+def test_query_server_overflow_tries_next_endpoint(monkeypatch):
+    # A server cutting the result below our MAXREC must never be accepted.
+    capped = FakeResponse(votable(rows=ROWS[:2], status_after="OVERFLOW"))
+    calls = fake_post(monkeypatch, capped, FakeResponse(votable()))
+    assert len(query()) == 3 and len(calls) == 2
+
+
+def test_query_server_overflow_everywhere_raises(monkeypatch):
+    capped = FakeResponse(votable(rows=ROWS[:2], status_after="OVERFLOW"))
+    fake_post(monkeypatch, capped, capped)
+    with pytest.raises(gaia.GaiaUnavailable, match="truncated the result at 2 rows"):
+        query()
+
+
+@pytest.mark.parametrize("status_after", ["OVERFLOW", None])
+def test_query_reaching_our_cap_raises(monkeypatch, status_after):
+    monkeypatch.setattr(gaia, "GAIA_MAX_ROWS", 3)
+    calls = fake_post(monkeypatch, FakeResponse(votable(status_after=status_after)))
     with pytest.raises(gaia.GaiaUnavailable, match="smaller field of view"):
-        gaia.query_gaia_cone(269.44627, 4.76820, 0.1, timeout_s=5)
-    assert calls[0][1]["data"]["MAXREC"] == "3"
+        query()
+    assert len(calls) == 1 and calls[0][1]["data"]["MAXREC"] == "3"
+
+
+def test_query_slow_download_hits_deadline(monkeypatch):
+    slow = FakeResponse(votable(), delay_s=0.03)  # ~20 chunks, ~0.6 s
+    fake_post(monkeypatch, slow, slow)
+    with pytest.raises(gaia.GaiaUnavailable, match="no complete response within"):
+        query(timeout_s=0.05)
+
+
+def test_query_stalled_read_is_bounded(monkeypatch):
+    release = threading.Event()
+    stalled = FakeResponse(votable(), stall=release)
+    fake_post(monkeypatch, stalled, stalled)
+    t0 = time.monotonic()
+    try:
+        with pytest.raises(gaia.GaiaUnavailable, match="no complete response within"):
+            query(timeout_s=0.2)
+        assert time.monotonic() - t0 < 1.0  # 2 endpoints x 0.2 s, plus slack
+    finally:
+        release.set()
 
 
 @pytest.mark.parametrize("ra, dec, r", [(10, 95, 0.1), (np.nan, 0, 0.1), (10, 0, 0)])

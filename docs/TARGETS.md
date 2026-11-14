@@ -22,7 +22,7 @@ Shifts are computed at 6.15″/px.
 |---|---|---|---|---|---|
 | Barnard's Star | motion | 269.44627 | +4.76820 | not tested |  |
 | ε Ind B | motion | 331.09665 | −56.80066 | not tested |  |
-| WISE 0855 | motion | ≈133.7599 | ≈−7.2422 | not tested | Assumes the designation epoch is ≈2010.5. Replace with SIMBAD's value when it's back, and use FOV ≥ 6′ until then. |
+| WISE 0855 | motion | 133.75989 | −7.24240 | not tested | Position from CatWISE2020 (IRSA `catwise_2020`, J085507.96−071439.3, `ra_pm`/`dec_pm` at MJD 57170 = 2015.405, [column docs](https://irsa.ipac.caltech.edu/data/WISE/CatWISE/gator_docs/catwise_colDescriptions.html)). pm and ϖ are lit. (CatWISE's own pm misses AllWISE's 2010.59 position by 1.9″). Includes parallax. |
 | RW Aur | variability | 76.95608 | +30.40113 | not tested |  |
 | R Dra | variability | 248.16723 | +66.75502 | not tested |  |
 
