@@ -1,0 +1,257 @@
+.stage {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: safe center;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* The frame column: HUD row, square image, caption row. Sized to the space between the chrome. */
+.column {
+  --hud-h: 28px;
+  --side: min(100%, calc(100dvh - var(--chrome-top) - var(--chrome-bottom) - var(--hud-h) * 2));
+  display: grid;
+  grid-template-rows: var(--hud-h) auto var(--hud-h);
+  width: var(--side);
+  max-width: 100%;
+}
+
+.hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  column-gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hudStrong {
+  color: var(--text-1);
+}
+
+.hudSep {
+  margin: 0 8px;
+  color: var(--text-2);
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--space-1);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--glass-border);
+}
+
+.canvas,
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.canvas {
+  image-rendering: pixelated;
+}
+
+.overlay {
+  pointer-events: none;
+  overflow: visible;
+}
+
+.caption {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.swatchNeg,
+.swatchPos {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: -1px;
+}
+
+.swatchNeg {
+  background: var(--text-1);
+}
+
+.swatchPos {
+  background: var(--mover);
+}
+
+/* Context inset slot, bottom-left of the stage. An outline, not glass: it is not a control. */
+.inset {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 132px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 12px;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-chip);
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .inset {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .column {
+    --hud-h: 40px;
+  }
+
+  .hud {
+    font-size: 11px;
+  }
+
+  .empty h2 {
+    font-size: 22px;
+  }
+
+  .presetGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .presetButton {
+    padding: 12px;
+  }
+}
+
+/* States */
+.card {
+  max-width: 440px;
+  padding: 28px;
+  text-align: center;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.card p {
+  margin: 0 0 18px;
+  color: var(--text-2);
+}
+
+.code {
+  display: block;
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: var(--flag);
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  max-width: 760px;
+  text-align: center;
+}
+
+.empty h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.empty p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.presetButton {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 16px;
+  border-radius: var(--radius-panel);
+  text-align: left;
+  border: 1px solid var(--glass-border);
+  color: var(--text-1);
+  transition:
+    border-color var(--dur) var(--ease),
+    background-color var(--dur) var(--ease);
+}
+
+.presetButton:hover {
+  border-color: var(--accent);
+}
+
+.presetName {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--hover-wash) 50%, transparent 70%) var(--space-1);
+  background-size: 300% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+.progress {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text-2);
+}
+
+.sourceTag {
+  padding: 1px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  color: var(--text-1);
+}

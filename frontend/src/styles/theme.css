@@ -1,0 +1,47 @@
+/* Lunar Glass design tokens. Use these everywhere; no stray hex values in components. */
+:root {
+  --space-0: #05070a;
+  --space-1: #0a0d12;
+  --glass-bg: rgba(14, 17, 23, 0.66);
+  --glass-bg-strong: rgba(14, 17, 23, 0.86);
+  --glass-border: rgba(220, 226, 235, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-blur: 18px;
+  --text-1: #e6e9ee;
+  --text-2: #a3acb9;
+  --accent: #8ab4ff;
+  --accent-ink: #0a0d12;
+  --mover: #f5b544;
+  --match: #5fd4a0;
+  --flag: #f87171;
+
+  --radius-pill: 999px;
+  --radius-panel: 16px;
+  --radius-chip: 10px;
+
+  --font-ui: "Inter", "Overpass", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 180ms;
+
+  /* Derived, still token-only. */
+  --hover-wash: rgba(220, 226, 235, 0.08);
+  --accent-wash: rgba(138, 180, 255, 0.14);
+  --flag-wash: rgba(248, 113, 113, 0.12);
+  --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.45);
+  --gutter: 16px;
+  --drawer-w: 340px;
+  --target-min: 44px;
+
+  /* Space the sky stage keeps clear for the floating chrome, so the image never sits under glass. */
+  --chrome-top: 128px;
+  --chrome-bottom: 112px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --chrome-top: 120px;
+    --chrome-bottom: 156px;
+  }
+}

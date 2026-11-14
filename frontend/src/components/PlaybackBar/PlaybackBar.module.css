@@ -1,0 +1,178 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1100px;
+  padding: 8px;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.play {
+  min-width: 96px;
+}
+
+.timeline {
+  flex: 1;
+  min-width: 160px;
+  padding: 0 12px;
+}
+
+.track {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The line between ticks, drawn behind them. */
+.track::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 14px;
+  height: 1px;
+  background: var(--glass-border);
+}
+
+.tick {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 4px 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  border-radius: var(--radius-chip);
+}
+
+.tick:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.dot::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--space-1);
+  border: 1.5px solid var(--text-2);
+}
+
+.tick[aria-current="true"] {
+  color: var(--text-1);
+}
+
+.tick[aria-current="true"] .dot::before {
+  display: none;
+}
+
+/* Epochs outside the current sequence (blink skips middle passes; difference uses epoch 1 as reference). */
+.tick[data-out="true"] {
+  opacity: 0.5;
+}
+
+.date {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.modes {
+  flex: none;
+}
+
+.status {
+  flex: 0 1 200px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  text-align: right;
+  padding-right: 8px;
+}
+
+.customize {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .bar {
+    flex-wrap: wrap;
+    border-radius: var(--radius-panel);
+  }
+
+  .timeline {
+    flex-basis: 0;
+  }
+
+  .modes {
+    order: 3;
+  }
+
+  .status {
+    order: 4;
+    flex: 1 1 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .play {
+    min-width: var(--target-min);
+  }
+
+  .playLabel {
+    display: none;
+  }
+
+  .transport {
+    flex: 1;
+  }
+
+  .customize {
+    display: inline-flex;
+    order: 2;
+  }
+
+  .timeline {
+    order: 3;
+    flex: 1 1 100%;
+    padding: 0 4px;
+  }
+
+  .modes {
+    order: 4;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .status {
+    order: 5;
+    flex-basis: 100%;
+    text-align: left;
+    padding: 0 8px 4px;
+  }
+}

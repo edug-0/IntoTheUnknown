@@ -1,0 +1,43 @@
+.pop {
+  position: absolute;
+  z-index: 35;
+  top: var(--chrome-top);
+  right: var(--gutter);
+  width: 280px;
+  padding: 16px 18px;
+  animation: drop var(--dur) var(--ease);
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+.title {
+  margin: 0 0 10px;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+
+.list dd {
+  margin: 0;
+  color: var(--text-1);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 26px;
+  padding: 2px 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-1);
+}

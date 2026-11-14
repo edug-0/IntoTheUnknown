@@ -1,0 +1,61 @@
+import { useLayoutEffect, useRef, type ReactNode } from "react";
+import s from "./AppShell.module.css";
+
+interface AppShellProps {
+  idle: boolean;
+  /** Width reserved on the right of the stage (drawer or Customize tab), in px. */
+  stageRight: number;
+  /** Hide the playback bar (the mobile bottom sheet takes its place). */
+  hideBottom: boolean;
+  /** Extra height reserved at the bottom (mobile bottom sheet), in px. */
+  bottomReserve: number;
+  stage: ReactNode;
+  top: ReactNode;
+  bottom: ReactNode;
+  overlays: ReactNode;
+}
+
+/**
+ * The stage fills the viewport. Top and bottom chrome float over it; their measured heights
+ * become --chrome-top and --chrome-bottom so the sky image is never placed under glass.
+ */
+export function AppShell({ idle, stageRight, hideBottom, bottomReserve, stage, top, bottom, overlays }: AppShellProps) {
+  const shellRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    const measure = () => {
+      const gutter = 16;
+      const t = topRef.current?.getBoundingClientRect().height ?? 0;
+      const b = hideBottom ? 0 : (bottomRef.current?.getBoundingClientRect().height ?? 0);
+      shell.style.setProperty("--chrome-top", `${Math.round(t + gutter * 2)}px`);
+      shell.style.setProperty("--chrome-bottom", `${Math.round(Math.max(b, bottomReserve) + gutter * 2)}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (topRef.current) ro.observe(topRef.current);
+    if (bottomRef.current) ro.observe(bottomRef.current);
+    return () => ro.disconnect();
+  }, [hideBottom, bottomReserve]);
+
+  return (
+    <div
+      ref={shellRef}
+      className={s.shell}
+      data-idle={idle}
+      style={{ ["--stage-right" as string]: `${stageRight}px` }}
+    >
+      <main className={s.stage}>{stage}</main>
+      <div ref={topRef} className={`${s.top} ${s.chrome}`}>
+        {top}
+      </div>
+      <div ref={bottomRef} className={`${s.bottom} ${s.chrome} ${hideBottom ? s.hiddenOnSheet : ""}`}>
+        {bottom}
+      </div>
+      {overlays}
+    </div>
+  );
+}
