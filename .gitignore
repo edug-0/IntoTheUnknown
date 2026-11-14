@@ -43,7 +43,7 @@ Thumbs.db
 .claude/settings.local.json
 
 # SPHEREx Blink proxy cache
-cache/
+/cache/
 scripts/spike_out/
 
 # Backend local render cache
