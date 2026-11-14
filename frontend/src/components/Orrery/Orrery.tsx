@@ -318,6 +318,7 @@ export function Orrery({ targets, onPick, onFlightStart }: OrreryProps) {
           className={s.target}
           onClick={() => pick(t, k)}
           onPointerEnter={() => (holdRef.current = true)}
+          onPointerDown={() => (holdRef.current = true)}
           onPointerLeave={() => (holdRef.current = false)}
           onFocus={() => (holdRef.current = true)}
           onBlur={() => (holdRef.current = false)}
