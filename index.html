@@ -294,8 +294,15 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
     <div id="expTable"></div>
   </div>
   <div class="tab" id="tab-ctx">
-    <div class="note">Aladin Lite (CDS) shows other telescopes' views of the same spot, with Gaia DR3 stars overlaid.</div>
-    <div class="row" style="margin:8px 0"><select id="hips"><option value="P/allWISE/color">AllWISE colour (3.4–12 µm)</option><option value="P/2MASS/color">2MASS colour (1.2–2.2 µm)</option><option value="P/DSS2/color">DSS2 colour (optical)</option><option value="P/PanSTARRS/DR1/color-z-zg-g">Pan-STARRS (optical)</option></select><button id="aladinBtn" style="flex:0 0 auto">Open</button></div>
+    <div class="note">The <b>real SPHEREx all-sky map</b> (DR1, all 102 bands) around this spot, plus other telescopes' views, in Aladin Lite. Drag to pan, scroll to zoom.</div>
+    <div class="row" style="margin:8px 0"><select id="hips" aria-label="Survey">
+      <option value="https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube" data-cube="1">SPHEREx DR1 all-sky · 102 bands</option>
+      <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/RGB-W4-W2-W1">AllWISE colour (3.4–22 µm)</option>
+      <option value="https://irsa.ipac.caltech.edu/data/hips/CDS/2MASS/Color">2MASS colour (1.2–2.2 µm)</option>
+      <option value="https://alasky.cds.unistra.fr/DSS/DSSColor">DSS2 colour (optical, CDS)</option>
+      <option value="https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-z-zg-g">Pan-STARRS (optical, CDS)</option>
+    </select><button id="aladinBtn" style="flex:0 0 auto">Centre</button></div>
+    <div id="cubeBox"><label for="cubeSlice">SPHEREx band: <b id="cubeVal" style="color:var(--text)"></b></label><input type="range" id="cubeSlice" min="0" max="101" step="1" value="40"></div>
     <div id="aladin"></div>
   </div>
   <h3>About this view</h3>
@@ -415,6 +422,8 @@ const CONFIG = {
   PIX_ARCSEC: 6.15,                 // SPHEREx native pixel scale
   CONCURRENCY: 6,
   SEASON_GAP_DAYS: 45,              // gap that separates survey passes (~6 months apart)
+  SEASON_MAX_DAYS: 75,              // longer "seasons" (targets near the ecliptic poles) are split…
+  SEASON_CHUNK_DAYS: 60,            // …into chunks this long
   VISIT_GAP_DAYS: 1.0,
   GAIA_MAX: 3000,
   SURVEY_START: 2025.3315,          // SPHEREx all-sky survey began 2025-05-01
@@ -431,6 +440,9 @@ const DETS = [
   {d:1, lo:0.75, hi:1.09, R:41,  depth:19.0}, {d:2, lo:1.10, hi:1.62, R:41,  depth:19.0}, {d:3, lo:1.63, hi:2.41, R:41,  depth:18.9},
   {d:4, lo:2.42, hi:3.82, R:35,  depth:18.6}, {d:5, lo:3.83, hi:4.41, R:110, depth:18.0}, {d:6, lo:4.42, hi:5.00, R:130, depth:17.6}];
 const RGB_MAP = {b:[1,2], g:[3,4], r:[5,6]};
+// Centre wavelengths (µm) of the 102 SPHEREx bands, as listed by IRSA's SPHEREx DR1 all-sky HiPS cube.
+// Frame index = 17*(detector-1) + (channel-1); frames 50 and 51 (the dichroic channels) are blank.
+const SPX_BANDS = "0.753 0.771 0.790 0.809 0.828 0.848 0.868 0.889 0.910 0.932 0.955 0.978 1.001 1.025 1.050 1.075 1.102 1.113 1.139 1.167 1.195 1.224 1.254 1.284 1.315 1.346 1.378 1.412 1.446 1.481 1.517 1.554 1.592 1.631 1.656 1.695 1.735 1.775 1.818 1.861 1.905 1.949 1.995 2.041 2.089 2.139 2.189 2.240 2.292 2.345 2.399 2.445 2.506 2.575 2.646 2.719 2.794 2.871 2.951 3.033 3.118 3.204 3.293 3.383 3.476 3.570 3.667 3.768 3.833 3.867 3.901 3.935 3.970 4.005 4.040 4.076 4.112 4.148 4.184 4.220 4.257 4.294 4.331 4.368 4.405 4.435 4.467 4.500 4.533 4.566 4.600 4.635 4.669 4.704 4.739 4.773 4.808 4.843 4.879 4.915 4.951 4.988".split(" ").map(Number);
 // Test targets from the challenge. Coordinates are at the stated epoch, then propagated with proper motion and parallax.
 // `slug` names the folder in demo/ (keep in sync with TARGETS in tools/fetch_demo.py).
 const PRESETS = [
@@ -754,6 +766,18 @@ async function queryDemo(slug){
   const rows=man.files.map(f=>({uri:f.uri, local:base+f.file, det:f.det, rel:f.rel, mjd:f.mjd, year:mjdToYear(f.mjd), version:f.version||""}));
   return {man, rows, base};
 }
+// Survey "seasons": runs of observations separated by gaps > SEASON_GAP_DAYS. Near the ecliptic poles SPHEREx sees a
+// target almost continuously (R Dra), so there are no gaps; seasons longer than SEASON_MAX_DAYS are split into
+// SEASON_CHUNK_DAYS pieces so frames, picks and light curves still sample changes over time.
+function seasonGroups(items, key="mjd"){
+  const unit = key==="year"? 365.25 : 1, out=[];
+  for(const g of clusterTimes(items, CONFIG.SEASON_GAP_DAYS/unit, key)){
+    const t0=g[0][key]; if((g[g.length-1][key]-t0)*unit <= CONFIG.SEASON_MAX_DAYS){ out.push(g); continue; }
+    const chunks=new Map(); for(const it of g){ const c=Math.floor((it[key]-t0)*unit/CONFIG.SEASON_CHUNK_DAYS); if(!chunks.has(c)) chunks.set(c,[]); chunks.get(c).push(it); }
+    out.push(...[...chunks.keys()].sort((a,b)=>a-b).map(k=>chunks.get(k)));
+  }
+  return out;
+}
 function clusterTimes(items, gapDays, key="mjd"){
   const groups=[]; let g=null, last=-1e9;
   for(const it of [...items].sort((a,b)=>a[key]-b[key])){ if(it[key]-last > gapDays){ g=[]; groups.push(g);} g.push(it); last=it[key]; }
@@ -761,7 +785,7 @@ function clusterTimes(items, gapDays, key="mjd"){
 }
 function pickSubset(rows, maxPer){
   const out=[];
-  for(const season of clusterTimes(rows, CONFIG.SEASON_GAP_DAYS)){
+  for(const season of seasonGroups(rows)){
     for(let d=1; d<=6; d++){
       const rs=season.filter(r=>r.det===d); if(!rs.length) continue;
       const n=Math.min(maxPer, rs.length);
@@ -964,7 +988,7 @@ function simulate(t){
 function buildFrames(){
   const exps = S.exps.filter(e=>S.dets.has(e.det));
   const groups = S.group==="each" ? exps.map(e=>[e]) : S.group==="all" ? (exps.length?[exps]:[]) :
-                 clusterTimes(exps, S.group==="epoch"? CONFIG.SEASON_GAP_DAYS : CONFIG.VISIT_GAP_DAYS);
+                 (S.group==="epoch"? seasonGroups(exps) : clusterTimes(exps, CONFIG.VISIT_GAP_DAYS));
   S.frames = groups.map(g=>{
     const year = g.reduce((s,e)=>s+e.year,0)/g.length;
     const label = S.group==="all"? `${yearToDate(g[0].year).slice(0,7)} → ${yearToDate(g[g.length-1].year).slice(0,7)}` : yearToDate(year);
@@ -1171,7 +1195,7 @@ function drawSpectrum(){
   DETS.forEach((d,i)=>{ ctx.fillStyle=DET_COLORS[i]+"33"; ctx.fillRect(X(d.lo), Y(lo)-4*dpr, X(d.hi)-X(d.lo), 4*dpr); });
   if(model.length){ ctx.strokeStyle="rgba(255,255,255,.55)"; ctx.setLineDash([4*dpr,3*dpr]); ctx.lineWidth=1.3*dpr; ctx.beginPath();
     model.forEach(([l,f],i)=>{ const y=Y(clamp(f,lo,hi)); i? ctx.lineTo(X(l),y) : ctx.moveTo(X(l),y); }); ctx.stroke(); ctx.setLineDash([]); }
-  const seasons=clusterTimes(S.exps,CONFIG.SEASON_GAP_DAYS); const sIdx=e=>seasons.findIndex(g=>g.includes(e));
+  const seasons=seasonGroups(S.exps); const sIdx=e=>seasons.findIndex(g=>g.includes(e));
   for(const p of pts){ if(logY && p.f<=0) continue; ctx.fillStyle=SEASON_COLORS[sIdx(p.e)%SEASON_COLORS.length]; ctx.beginPath(); ctx.arc(X(p.lam),Y(p.f),2.6*dpr,0,7); ctx.fill(); }
   $("specLegend").innerHTML = seasons.map((g,i)=>`<span><i style="background:${SEASON_COLORS[i%SEASON_COLORS.length]}"></i>${yearToDate(g[0].year).slice(0,7)}</span>`).join("")
     + (model.length? `<span><i class="line"></i>input model</span>`:"");
@@ -1191,7 +1215,7 @@ function drawLC(){
   ctx.strokeStyle="rgba(150,175,255,.25)"; ctx.setLineDash([3*dpr,3*dpr]); ctx.beginPath(); ctx.moveTo(X(Math.min(...ys)-0.05),Y(1)); ctx.lineTo(X(Math.max(...ys)+0.05),Y(1)); ctx.stroke(); ctx.setLineDash([]);
   for(let d=1; d<=6; d++){ const ps=rel.filter(p=>p.det===d); if(!ps.length) continue; const col=DET_COLORS[d-1];
     ctx.fillStyle=col+"66"; for(const p of ps){ ctx.beginPath(); ctx.arc(X(p.year),Y(clamp(p.r,lo,hi)),2*dpr,0,7); ctx.fill(); }
-    const seas=clusterTimes(ps,CONFIG.SEASON_GAP_DAYS/365.25,"year").map(g=>({y:g.reduce((s,p)=>s+p.year,0)/g.length, r:medianOf(g.map(p=>p.r))}));
+    const seas=seasonGroups(ps,"year").map(g=>({y:g.reduce((s,p)=>s+p.year,0)/g.length, r:medianOf(g.map(p=>p.r))}));
     ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=1.6*dpr; ctx.beginPath(); seas.forEach((s,i)=> i? ctx.lineTo(X(s.y),Y(clamp(s.r,lo,hi))) : ctx.moveTo(X(s.y),Y(clamp(s.r,lo,hi)))); ctx.stroke();
     for(const s of seas){ ctx.beginPath(); ctx.arc(X(s.y),Y(clamp(s.r,lo,hi)),3.5*dpr,0,7); ctx.fill(); }
     legend.insertAdjacentHTML("beforeend",`<span><i style="background:${col}"></i>D${d} ${DETS[d-1].lo}–${DETS[d-1].hi} µm</span>`); }
@@ -1251,6 +1275,7 @@ function setupGeometry(t){
 async function load(){
   stop(); const token=++S.loadToken; srcNote();
   let t; try{ t=readTarget(); }catch(e){ setBanner(e.message,"err"); return; }
+  S.loading=true;
   document.querySelectorAll(".preset").forEach(b=>b.classList.toggle("on", b.dataset.name===t.name));
   let demoSlug=null;
   if(S.src==="demo"){
@@ -1277,7 +1302,7 @@ async function load(){
   }
   catch(e){ busy(false); if(token!==S.loadToken) return; return loadSim(t, `${await archiveErrorText(e)} Showing a <b>simulated</b> sky meanwhile.`); }
   if(token!==S.loadToken) return;
-  if(!rows.length){ busy(false); setBanner("SPHEREx has no images covering this position in the archive yet.", "err"); setStatus(""); return; }
+  if(!rows.length){ busy(false); S.loading=false; setBanner("SPHEREx has no images covering this position in the archive yet.", "err"); setStatus(""); return; }
   const pick = pickSubset(rows, Math.max(1,+$("maxPer").value||3));
   const estMB = useDemo? 0 : pick.length * (S.N*1.25)**2 * 4*4 / 1e6;
   setStatus(useDemo? `Loading ${pick.length} bundled cutouts…` : `${rows.length} exposures found; downloading ${pick.length} cutouts (~${estMB.toFixed(1)} MB)…`);
@@ -1294,7 +1319,7 @@ async function load(){
   if(token!==S.loadToken) return;
   if(!S.exps.length){ return loadSim(t, `Found the exposures but couldn't ${useDemo?"read":"download"} any cutouts (${fail} failed). ${useDemo?"":"Run <code>python3 server.py</code> to route downloads through the local proxy. "}Showing a <b>simulated</b> sky meanwhile.`); }
   S.exps.sort((a,b)=>a.mjd-b.mjd);
-  const nSeas=clusterTimes(S.exps,CONFIG.SEASON_GAP_DAYS).length;
+  const nSeas=seasonGroups(S.exps).length;
   finishLoad(`${S.exps.length} real exposures across ${nSeas} seasons${fail?` · ${fail} failed`:""}.`,
     man? `<span>Demo pack</span><span>built ${esc(man.generated.slice(0,10))} · ${esc((man.releases||[]).join(", "))} · ${man.archive_exposures} in archive</span>` : "");
 }
@@ -1302,20 +1327,26 @@ function loadSim(t, why){
   $("modeBadge").textContent="SIMULATED"; $("modeBadge").className="sim"; // also when live/demo fell back to simulation
   setBanner(why || "You're viewing a <b>simulated</b> sky built from the target's real motion, parallax and SPHEREx's real survey schedule. The dashed line in the Spectrum tab is the input model: the measured points should land on it.", why? "err" : "");
   const {exps, gaia, wise, windows} = simulate(t); S.exps=exps; S.gaia=gaia; S.wise=wise;
-  if(!exps.length){ setStatus("SPHEREx hasn't observed this position yet."); render(); return; }
+  if(!exps.length){ S.loading=false; setStatus("SPHEREx hasn't observed this position yet."); render(); return; }
   finishLoad(`Simulated ${exps.length} exposures in ${windows} survey windows (${yearToDate(exps[0].year)} to ${yearToDate(exps[exps.length-1].year)}).`);
 }
 function finishLoad(msg, metaExtra){
+  S.loading=false;
   buildFrames(); renderTable(); renderMeta(metaExtra); render(); updatePhot(); setStatus(msg); $("progress").firstChild.style.width="100%"; setCaption();
   $("expNote").textContent = S.src==="sim"? "Simulated exposures (no files)." : "Every exposure loaded, with its data quality and a link to the file. 'flags' summarises the FLAGS extension.";
-  if(S.aladin) S.aladin.gotoRaDec(S.center[0], S.center[1]);
+  if(S.aladin){ S.aladin.gotoRaDec(S.center[0], S.center[1]); S.aladin.setFoV(Math.max(S.fovDeg*2,0.05)); }
+  if(S.wantPlay){ S.wantPlay=false; play(); }
 }
 
 /* ============================ player ============================ */
 function step(d){ if(!S.frames.length) return; S.cur=(S.cur+d+S.frames.length)%S.frames.length; render(); }
-function play(){ if(S.playing||S.frames.length<2) return; S.playing=true; $("playBtn").textContent="❚❚"; $("playBtn").setAttribute("aria-label","Pause"); tick(); }
+function play(){
+  if(S.playing) return;
+  if(S.loading){ S.wantPlay=true; setStatus("Will play as soon as the images have loaded…"); return; }
+  if(S.frames.length<2){ setStatus(S.frames.length? `Only one frame with these settings, so there's nothing to animate. Try "One frame per… Visit" or "Exposure".` : "Pick a target first."); return; }
+  S.playing=true; $("playBtn").textContent="❚❚"; $("playBtn").setAttribute("aria-label","Pause"); tick(); }
 function tick(){ if(!S.playing) return; step(1); S.timer=setTimeout(tick, 1000/(+$("fps").value)); }
-function stop(){ S.playing=false; clearTimeout(S.timer); $("playBtn").textContent="▶"; $("playBtn").setAttribute("aria-label","Play"); }
+function stop(){ S.wantPlay=false; S.playing=false; clearTimeout(S.timer); $("playBtn").textContent="▶"; $("playBtn").setAttribute("aria-label","Play"); }
 
 /* ============================ URL state (embeddable) ============================ */
 function updateURL(){
@@ -1392,6 +1423,7 @@ function applyPreset(p){
   S.dets = new Set(p.kind==="ydwarf"? [5,6] : [1,2,3,4,5,6]);
   document.querySelectorAll("#dets input").forEach(cb=>cb.checked=S.dets.has(+cb.dataset.d));
   $("fov").value = p.kind==="ydwarf"||p.kind==="tdwarf"? 4 : 6; syncFov();
+  $("cubeSlice").value = defaultSlice(); cubeLabel();
   load();
 }
 function syncFov(){ const v=+$("fov").value; $("fovVal").textContent = `${v}′ × ${v}′`;
@@ -1456,6 +1488,8 @@ function init(){
   $("specLog").onchange=drawSpectrum; $("specTrack").onchange=updatePhot; $("specApcor").onchange=updatePhot;
   $("tabs").onclick=e=>{ const t=e.target.dataset?.t; if(t) activateTab(t); };
   $("aladinBtn").onclick=openAladin;
+  $("hips").onchange=openAladin;
+  $("cubeSlice").oninput=applySlice; cubeLabel();
   document.addEventListener("click", e=>{ const a=e.target.closest("[data-about]"); if(a){ e.preventDefault(); openAbout(a.dataset.about); } });
   $("aboutTabs").onclick=e=>{ const s=e.target.dataset?.s; if(s) openAbout(s); };
   $("aboutClose").onclick=()=>$("about").close();
@@ -1472,15 +1506,40 @@ function init(){
     else applyPreset(PRESETS[0]);
   });
 }
-function activateTab(t){ [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.t===t)); document.querySelectorAll(".tab").forEach(d=>d.classList.toggle("on", d.id==="tab-"+t)); if(t==="spec") drawSpectrum(); if(t==="lc") drawLC(); }
-function openAladin(){
-  if(!S.center) return;
-  const go=()=>{ A.init.then(()=>{ S.aladin = A.aladin("#aladin",{survey:$("hips").value, fov:S.fovDeg*2, target:`${S.center[0]} ${S.center[1]}`, showReticle:true});
-      S.aladin.addCatalog(A.catalogFromVizieR("I/355/gaiadr3", `${S.center[0]} ${S.center[1]}`, S.fovDeg, {onClick:"showTable", color:"#7fd8ff"})); }); };
-  if(window.A){ if(S.aladin){ S.aladin.setImageSurvey($("hips").value); S.aladin.gotoRaDec(S.center[0],S.center[1]); } else go(); return; }
-  const s=document.createElement("script"); s.src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"; s.charset="utf-8";
-  s.onload=go; s.onerror=()=>{ $("aladin").innerHTML='<div class="note" style="padding:10px">Aladin Lite couldn\'t load here. Open the page from <code>server.py</code> or any normal web host.</div>'; };
-  document.head.appendChild(s);
+function activateTab(t){ [...$("tabs").children].forEach(b=>b.classList.toggle("on",b.dataset.t===t)); document.querySelectorAll(".tab").forEach(d=>d.classList.toggle("on", d.id==="tab-"+t)); if(t==="spec") drawSpectrum(); if(t==="lc") drawLC(); if(t==="ctx") openAladin(); }
+// Aladin Lite (CDS), pinned to a released version on jsDelivr. (CDS's own ".../v3/latest/aladin.js" URL now returns 404.)
+const ALADIN_JS = "https://cdn.jsdelivr.net/npm/aladin-lite@3.8.2/dist/aladin.js";
+let aladinLoading = null;
+function aladinMsg(html){ $("aladin").innerHTML=`<div class="note" style="padding:12px">${html}</div>`; }
+function loadAladinScript(){
+  if(window.A) return Promise.resolve();
+  // the npm build is an ES module: import it and expose its default export as the usual global A
+  return aladinLoading ||= import(ALADIN_JS).then(m=>{ window.A = m.default || m.A || m; })
+    .catch(e=>{ aladinLoading=null; throw new Error(e.message.includes("fetch")? "couldn't download it (offline?)" : e.message); });
+}
+function isCube(){ return !!$("hips").selectedOptions[0]?.dataset.cube; }
+function cubeLabel(){ const i=+$("cubeSlice").value, d=Math.floor(i/17)+1, c=i%17+1;
+  $("cubeVal").textContent = `${SPX_BANDS[i].toFixed(3)} µm · D${d} channel ${c}${i===50||i===51?" (dichroic channel: blank in DR1)":""}`; }
+// start the slider at the middle of the detectors currently selected for the movie
+function defaultSlice(){ const ds=[...S.dets].map(d=>DETS[d-1]); const lam=Math.sqrt(Math.min(...ds.map(d=>d.lo))*Math.max(...ds.map(d=>d.hi)));
+  let best=0; SPX_BANDS.forEach((l,i)=>{ if(i!==50&&i!==51 && Math.abs(l-lam)<Math.abs(SPX_BANDS[best]-lam)) best=i; }); return best; }
+// a freshly added HiPS layer resets its slice once it has loaded its properties, so re-apply until it sticks
+function applySliceWhenReady(tries=0){ applySlice(); const L=S.aladin?.getBaseImageLayer?.();
+  if(isCube() && tries<20 && (!L || !L.added || L.slice!==+$("cubeSlice").value)) setTimeout(()=>applySliceWhenReady(tries+1), 500); }
+function applySlice(){ cubeLabel(); if(!S.aladin||!isCube()) return; const L=S.aladin.getBaseImageLayer?.(); if(L?.setSliceNumber) L.setSliceNumber(+$("cubeSlice").value); }
+async function openAladin(){
+  if(!S.center){ aladinMsg("Load a target first."); return; }
+  $("cubeBox").style.display = isCube()? "block":"none";
+  const target=`${S.center[0]} ${S.center[1]}`, url=$("hips").value, fov=Math.max(S.fovDeg*2,0.05);
+  if(S.aladin){ if(S.aladinSurvey!==url){ S.aladin.setBaseImageLayer(url); S.aladinSurvey=url; } S.aladin.gotoRaDec(S.center[0],S.center[1]); S.aladin.setFoV(fov); applySliceWhenReady(); return; }
+  aladinMsg("Loading Aladin Lite…");
+  try{
+    await loadAladinScript(); await A.init;
+    $("aladin").innerHTML="";
+    S.aladin = A.aladin("#aladin",{survey:url, fov, target, showReticle:true, showFullscreenControl:true, showLayersControl:true, showGotoControl:false, showShareControl:false});
+    S.aladinSurvey=url; applySliceWhenReady();
+    try{ S.aladin.addCatalog(A.catalogFromVizieR("I/355/gaiadr3", target, S.fovDeg, {onClick:"showTable", color:"#7fd8ff", name:"Gaia DR3"})); }catch(e){ console.warn("Gaia overlay in Aladin failed", e); }
+  }catch(e){ S.aladin=null; aladinMsg(`Aladin Lite couldn't load (${esc(e.message)}). It needs an internet connection to <code>cdn.jsdelivr.net</code> and the survey servers.`); }
 }
 init();
 </script>

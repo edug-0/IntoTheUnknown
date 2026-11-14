@@ -31,6 +31,12 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
 
+    def end_headers(self):
+        # Never let the browser keep a stale copy of the app or the demo pack (local development server).
+        if not self.path.startswith("/proxy/"):
+            self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
+
     def log_message(self, fmt, *args):
         sys.stderr.write("  " + (fmt % args) + "\n")
 

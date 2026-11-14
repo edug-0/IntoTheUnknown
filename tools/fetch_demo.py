@@ -31,6 +31,8 @@ UA = "SPHEREx-Blink-demo-builder/1.0"
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "demo")
 D2R = math.pi / 180
 SEASON_GAP_DAYS = 45
+SEASON_MAX_DAYS = 75
+SEASON_CHUNK_DAYS = 60
 
 # Keep in sync with PRESETS in index.html (same numbers; slug is the demo folder name).
 TARGETS = [
@@ -144,12 +146,23 @@ def normalise(rows):
 
 
 def seasons(rows):
+    """Same as seasonGroups() in index.html: split at gaps > SEASON_GAP_DAYS, and split seasons longer than
+    SEASON_MAX_DAYS (near-continuous coverage at the ecliptic poles, e.g. R Dra) into SEASON_CHUNK_DAYS chunks."""
     groups, last = [], -1e9
     for r in sorted(rows, key=lambda r: r["mjd"]):
         if r["mjd"] - last > SEASON_GAP_DAYS:
             groups.append([])
         groups[-1].append(r); last = r["mjd"]
-    return groups
+    out = []
+    for g in groups:
+        t0 = g[0]["mjd"]
+        if g[-1]["mjd"] - t0 <= SEASON_MAX_DAYS:
+            out.append(g); continue
+        chunks = {}
+        for r in g:
+            chunks.setdefault(int((r["mjd"] - t0) // SEASON_CHUNK_DAYS), []).append(r)
+        out += [chunks[k] for k in sorted(chunks)]
+    return out
 
 
 def pick(rows, per):
