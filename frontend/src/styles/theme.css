@@ -15,9 +15,9 @@
   --match: #5fd4a0;
   --flag: #f87171;
 
-  --radius-pill: 999px;
-  --radius-panel: 16px;
-  --radius-chip: 10px;
+  --radius-pill: 6px;
+  --radius-panel: 8px;
+  --radius-chip: 4px;
 
   --font-ui: "Inter", "Overpass", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;

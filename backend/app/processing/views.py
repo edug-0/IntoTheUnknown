@@ -65,7 +65,10 @@ POOL = cf.ThreadPoolExecutor(max_workers=config.MAX_RENDER_JOBS)
 
 
 def query_key(req: ViewRequest) -> str:
-    return hashlib.sha256(f"q1|{req.ra:.4f}|{req.dec:+.4f}|{req.fov_arcmin}|{req.band}".encode()).hexdigest()[:20]
+    key = f"q1|{req.ra:.4f}|{req.dec:+.4f}|{req.fov_arcmin}|{req.band}"
+    if req.source != "auto":
+        key += f"|{req.source}"
+    return hashlib.sha256(key.encode()).hexdigest()[:20]
 
 
 # ---------------------------------------------------------------- frame sources
@@ -87,7 +90,7 @@ def _demo_pack(req: ViewRequest) -> tuple[Path, dict] | None:
     return None
 
 
-def demo_frames(req: ViewRequest, job: Job) -> list[dict] | None:
+def demo_frames(req: ViewRequest, job: Job) -> tuple[list[dict], dict] | None:
     hit = _demo_pack(req)
     if not hit:
         return None
@@ -101,7 +104,14 @@ def demo_frames(req: ViewRequest, job: Job) -> list[dict] | None:
         if r is not None:
             out.append(r)
         job.done += 1
-    return out
+    origin = {
+        "kind": "saved",
+        "label": "Saved SPHEREx cutouts bundled with the app",
+        "fetched": m.get("generated"),
+        "files": len(m.get("files", [])),
+        "archive_exposures": m.get("archive_exposures"),
+    }
+    return out, origin
 
 
 def live_frames(req: ViewRequest, job: Job) -> list[dict]:
@@ -169,13 +179,26 @@ def _flag_counts(ep: list[dict]) -> dict[str, int]:
 
 def build(job: Job) -> None:
     req = job.req
-    frames = demo_frames(req, job)
-    source = "golden"
-    min_frames = config.MIN_EPOCH_FRAMES_DEMO
-    if frames is None:
+    saved = demo_frames(req, job) if req.source != "live" else None
+    if saved is None and req.source == "saved":
+        raise ViewError(
+            "NOT_SAVED",
+            "Saved cutouts exist only for the five test targets at fields of view up to 8 arcmin. "
+            "Switch the data source to Live archive or Auto.",
+        )
+    if saved is not None:
+        frames, origin = saved
+        source, min_frames = "golden", config.MIN_EPOCH_FRAMES_DEMO
+    else:
         frames = live_frames(req, job)
-        source = "irsa"
-        min_frames = config.MIN_EPOCH_FRAMES_LIVE
+        source, min_frames = "irsa", config.MIN_EPOCH_FRAMES_LIVE
+        origin = {
+            "kind": "live",
+            "label": "Live from NASA/IPAC IRSA",
+            "fetched": datetime.now(UTC).isoformat(timespec="seconds"),
+            "files": len(frames),
+            "archive_exposures": None,
+        }
 
     w, shape = stack.common_grid(req.ra, req.dec, req.fov_arcmin)
     job.status, job.total, job.done = "stack", len(frames), 0
@@ -246,6 +269,7 @@ def build(job: Job) -> None:
             },
         },
         "catalog": {"version": catalog_version, "collections": collections},
+        "origin": origin,
         "stretch": stretch,
         "bandpass_matched": info["bandpass_matched"],
         "epochs": epoch_rows,

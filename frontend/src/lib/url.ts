@@ -1,4 +1,4 @@
-import { BAND_OPTIONS, FOV_OPTIONS, type Band, type FovArcmin } from "../types";
+import { BAND_OPTIONS, FOV_OPTIONS, type Band, type DataSource, type FovArcmin } from "../types";
 
 export type ViewMode = "all" | "blink" | "diff" | "inspect";
 /** Tabs of the right-hand details drawer (null = closed). */
@@ -17,6 +17,7 @@ export interface ViewState {
   dec: number | null;
   fov: FovArcmin;
   band: Band;
+  source: DataSource;
   /** Preset id when the view came from a target chip. */
   target: string | null;
   mode: ViewMode;
@@ -38,6 +39,7 @@ export interface ViewState {
 export const DEFAULTS: Omit<ViewState, "ra" | "dec" | "target"> = {
   fov: 6,
   band: "auto",
+  source: "auto",
   mode: "all",
   epoch: 0,
   panel: null,
@@ -85,6 +87,7 @@ export function parseUrl(search: string): ViewState {
     target: hasCoords ? p.get("target") : null,
     fov: FOV_OPTIONS.includes(fov as FovArcmin) ? (fov as FovArcmin) : DEFAULTS.fov,
     band: BAND_OPTIONS.includes(band as Band) ? (band as Band) : DEFAULTS.band,
+    source: (["auto", "saved", "live"] as const).find((v) => v === p.get("src")) ?? DEFAULTS.source,
     mode: MODES.includes(mode as ViewMode) ? (mode as ViewMode) : DEFAULTS.mode,
     panel: PANELS.includes(panel as Panel) ? (panel as Panel) : null,
     epoch: epoch !== null && epoch >= 1 ? Math.floor(epoch) - 1 : 0,
@@ -109,6 +112,7 @@ export function toSearch(s: ViewState): string {
   set("fov", String(s.fov));
   set("target", s.target);
   set("band", s.band === DEFAULTS.band ? null : s.band);
+  set("src", s.source === DEFAULTS.source ? null : s.source);
   set("mode", s.mode === DEFAULTS.mode ? null : s.mode);
   set("epoch", s.epoch === 0 ? null : String(s.epoch + 1));
   set("panel", s.panel);

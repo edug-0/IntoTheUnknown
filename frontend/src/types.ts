@@ -28,12 +28,16 @@ export interface Target {
   band: Band;
 }
 
+/** auto: saved cutouts when available, else live IRSA. saved: bundled cutouts only. live: always IRSA. */
+export type DataSource = "auto" | "saved" | "live";
+
 export interface ViewRequest {
   ra: number;
   dec: number;
   fov_arcmin: FovArcmin;
   band: Band;
   mode: "stack" | "frames";
+  source: DataSource;
 }
 
 export type ViewStage = "queued" | "query" | "fetch" | "stack" | "render" | "ready" | "error";
@@ -93,6 +97,8 @@ export interface Manifest {
   query: { ra: number; dec: number; fov_arcmin: FovArcmin; band: Band };
   grid: { nx: number; ny: number; pix_arcsec: number; wcs: Record<string, string | number> };
   catalog: { version: string; collections: string[] };
+  /** Where these images came from. */
+  origin?: { kind: "saved" | "live"; label: string; fetched: string | null; files: number; archive_exposures: number | null };
   stretch: { kind: "asinh"; vmin: number; vmax: number; beta: number };
   /** False when no channel is common to every epoch (stacks then use the channel union). */
   bandpass_matched?: boolean;

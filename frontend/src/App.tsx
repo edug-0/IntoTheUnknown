@@ -61,8 +61,8 @@ export default function App({ source }: { source: ViewSource }) {
     () =>
       url.ra === null || url.dec === null
         ? null
-        : { ra: url.ra, dec: url.dec, fov_arcmin: url.fov, band: url.band, mode: "stack", presetId: url.target },
-    [url.ra, url.dec, url.fov, url.band, url.target],
+        : { ra: url.ra, dec: url.dec, fov_arcmin: url.fov, band: url.band, mode: "stack", source: url.source, presetId: url.target },
+    [url.ra, url.dec, url.fov, url.band, url.source, url.target],
   );
   const load = useView(source, query, attempt);
   const view = load.kind === "ready" ? load.view : null;
@@ -157,6 +157,7 @@ export default function App({ source }: { source: ViewSource }) {
   };
 
   const customize: CustomizeValues = {
+    source: url.source,
     fov: url.fov,
     speed: url.speed,
     stretch: url.stretch,
@@ -174,6 +175,7 @@ export default function App({ source }: { source: ViewSource }) {
       invert: DEFAULTS.invert,
       gain: DEFAULTS.gain,
       ref: DEFAULTS.ref,
+      source: DEFAULTS.source,
     });
 
   const available = {
@@ -237,8 +239,12 @@ export default function App({ source }: { source: ViewSource }) {
         .join(" · ")
     : DATA_CREDIT;
 
-  const stageLeft = mobile ? GUTTER : customizeOpen ? PANEL_W + GUTTER * 2 : 44 + GUTTER * 2;
-  const stageRight = mobile ? GUTTER : drawerOpen ? DRAWER_W + RAIL_W + GUTTER * 3 : RAIL_W + GUTTER * 2;
+  const left = mobile ? GUTTER : customizeOpen ? PANEL_W + GUTTER * 2 : 44 + GUTTER * 2;
+  const right = mobile ? GUTTER : drawerOpen ? DRAWER_W + RAIL_W + GUTTER * 3 : RAIL_W + GUTTER * 2;
+  // The home map is centred on the screen, so it reserves the same space on both sides.
+  const home = load.kind === "idle";
+  const stageLeft = home ? Math.max(left, right) : left;
+  const stageRight = home ? Math.max(left, right) : right;
   const sheet = mobile && (drawerOpen || sheetOpen);
 
   return (
@@ -248,7 +254,7 @@ export default function App({ source }: { source: ViewSource }) {
       stageRight={stageRight}
       hideBottom={sheet}
       bottomReserve={sheet ? Math.min(window.innerHeight * 0.6, 480) : 0}
-      backdrop={<SkyBackdrop dim={load.kind !== "idle"} />}
+      backdrop={<SkyBackdrop dim={load.kind !== "idle"} travelKey={url.ra === null || url.dec === null ? null : `${url.ra},${url.dec}`} />}
       top={
         <>
           <TopBar
@@ -323,6 +329,9 @@ export default function App({ source }: { source: ViewSource }) {
               onChange={(v) => update(v)}
               onReset={resetCustomize}
               epochs={epochs}
+              origin={view?.manifest.origin ?? null}
+              collections={view?.manifest.catalog.collections ?? []}
+              loading={load.kind === "loading"}
               sheet={mobile}
             />
           )}

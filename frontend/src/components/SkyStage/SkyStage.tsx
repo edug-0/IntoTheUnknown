@@ -40,16 +40,17 @@ interface SkyStageProps {
 export function SkyStage(props: SkyStageProps) {
   const { load } = props;
   if (load.kind === "idle") return <Home onPreset={props.onPreset} onTour={props.onTour} />;
+  const empty = load.kind === "ready" && load.view.manifest.epochs.length === 0;
   return (
     <section className={s.stage} aria-label="Sky view">
-      {load.kind === "loading" && (
-        <Eyepiece {...props} view={null}>
-          <Loading load={load} />
+      {load.kind === "error" && <ErrorCard code={load.code} message={load.message} onRetry={props.onRetry} />}
+      {empty && <NoCoverage onRetry={props.onRetry} />}
+      {(load.kind === "loading" || (load.kind === "ready" && !empty)) && (
+        // Keyed by position so the telescope zoom plays once per target, not again when data arrives.
+        <Eyepiece key={`${props.ra},${props.dec}`} {...props} view={load.kind === "ready" ? load.view : null}>
+          {load.kind === "loading" && <Loading load={load} />}
         </Eyepiece>
       )}
-      {load.kind === "error" && <ErrorCard code={load.code} message={load.message} onRetry={props.onRetry} />}
-      {load.kind === "ready" &&
-        (load.view.manifest.epochs.length === 0 ? <NoCoverage onRetry={props.onRetry} /> : <Eyepiece {...props} view={load.view} />)}
     </section>
   );
 }
@@ -133,7 +134,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
   return (
     <>
       {box && outer && (
-        <svg className={s.sky} width={box.vw} height={box.vh} aria-hidden="true">
+        <svg className={`${s.sky} ${s.zoomIn}`} width={box.vw} height={box.vh} aria-hidden="true">
           <defs>
             <mask id="frame-hole">
               <rect width={box.vw} height={box.vh} fill="white" />
@@ -160,7 +161,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
         </svg>
       )}
 
-      <div className={s.column}>
+      <div className={`${s.column} ${s.zoomIn}`}>
         <div className={`${s.topRow} mono`}>
           <ScaleBar side={box?.side ?? 0} fovArcmin={fovArcmin} />
           {diff ? (
@@ -223,6 +224,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
 
       {showLabel && box && (
         <TargetLabel
+          className={s.labelIn}
           left={box.left + box.side / 2 + (box.side / 2 + 36) * 0.7071 + 60}
           top={box.top + box.side / 2 - (box.side / 2 + 36) * 0.7071 - 20}
           maxWidth={Math.min(280, labelRoom)}
@@ -315,9 +317,9 @@ function Leader({ left, top, side }: { left: number; top: number; side: number }
   );
 }
 
-function TargetLabel(p: { left: number; top: number; maxWidth: number; name: string; ra: number | null; dec: number | null; sub: string | null; fixture: string | null }) {
+function TargetLabel(p: { className: string; left: number; top: number; maxWidth: number; name: string; ra: number | null; dec: number | null; sub: string | null; fixture: string | null }) {
   return (
-    <div className={s.targetLabel} style={{ left: p.left, top: p.top, maxWidth: p.maxWidth }}>
+    <div className={`${s.targetLabel} ${p.className}`} style={{ left: p.left, top: p.top, maxWidth: p.maxWidth }}>
       <span className={`display ${s.targetName}`}>{p.name}</span>
       {p.ra !== null && p.dec !== null && (
         <span className={`mono ${s.targetCoords}`}>

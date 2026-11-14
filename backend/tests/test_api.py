@@ -36,6 +36,7 @@ def test_barnard_view_from_demo_pack():
     assert body["status"] == "ready", body
     m = client.get(body["manifest_url"]).json()
     assert m["source"] == "golden" and len(m["epochs"]) >= 2
+    assert m["origin"]["kind"] == "saved" and m["origin"]["files"] > 0
     nx, ny = m["grid"]["nx"], m["grid"]["ny"]
     arr = np.frombuffer(
         client.get(body["manifest_url"].replace("manifest.json", m["epochs"][0]["image"])).content, "<f4"
@@ -54,3 +55,14 @@ def test_bad_request_is_422():
 
 def test_cache_dir_exists():
     assert config.CACHE_DIR.exists()
+
+
+def test_saved_only_rejects_unknown_position():
+    r = client.post("/api/views", json={**BARNARD, "ra": 10.0, "dec": 10.0, "source": "saved"})
+    vid = r.json()["view_id"]
+    for _ in range(50):
+        body = client.get(f"/api/views/{vid}").json()
+        if body["status"] == "error":
+            break
+        time.sleep(0.1)
+    assert body["error"]["code"] == "NOT_SAVED"

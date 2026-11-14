@@ -178,3 +178,18 @@
     z-index: 30;
   }
 }
+
+.origin {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--glass-border);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.originKind {
+  color: var(--text-1);
+  font-weight: 600;
+}

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { GAINS, SPEEDS, type StretchKind } from "../../lib/url";
-import { BAND_OPTIONS, FOV_OPTIONS, type Band, type Epoch, type FovArcmin } from "../../types";
+import { BAND_OPTIONS, FOV_OPTIONS, type Band, type DataSource, type Epoch, type FovArcmin, type Manifest } from "../../types";
 import { GlassButton, GlassPanel, Icon, Segmented, Switch } from "../glass";
 import s from "./CustomizePanel.module.css";
 
 export interface CustomizeValues {
+  source: DataSource;
   fov: FovArcmin;
   speed: number;
   stretch: StretchKind;
@@ -21,6 +22,10 @@ interface CustomizePanelProps {
   onChange: (v: Partial<CustomizeValues>) => void;
   onReset: () => void;
   epochs: Epoch[];
+  /** Where the loaded images came from (null before a view loads). */
+  origin: Manifest["origin"] | null;
+  collections: string[];
+  loading: boolean;
   /** Mobile renders the same panel as a bottom sheet. */
   sheet?: boolean;
 }
@@ -42,7 +47,7 @@ const BAND_LABEL: Record<Band, string> = {
  * Always-visible customize panel, docked on the left like the NASA Eyes story rail.
  * The common choices sit on top; less common ones fold away under "More".
  */
-export function CustomizePanel({ open, onOpenChange, values: v, onChange, onReset, epochs, sheet }: CustomizePanelProps) {
+export function CustomizePanel({ open, onOpenChange, values: v, onChange, onReset, epochs, origin, collections, loading, sheet }: CustomizePanelProps) {
   const [more, setMore] = useState(false);
   if (!open) {
     return (
@@ -69,6 +74,39 @@ export function CustomizePanel({ open, onOpenChange, values: v, onChange, onRese
       </div>
 
       <div className={s.body}>
+        <section className={s.group} aria-labelledby="cz-data">
+          <h3 id="cz-data" className={s.groupTitle}>
+            Data
+          </h3>
+          <Field label="Images from">
+            <Segmented
+              label="Where the images come from"
+              value={v.source}
+              onChange={(x) => onChange({ source: x })}
+              options={[
+                { value: "auto", label: "Auto", title: "Saved cutouts when we have them, otherwise the live archive" },
+                { value: "saved", label: "Saved", title: "Real SPHEREx cutouts bundled with the app. Works offline." },
+                { value: "live", label: "Live", title: "Fresh from NASA/IPAC IRSA. Slower; needs the archive to be up." },
+              ]}
+            />
+          </Field>
+          <p className={s.origin} aria-live="polite">
+            {loading ? (
+              "Loading…"
+            ) : origin ? (
+              <>
+                <span className={s.originKind}>{origin.kind === "saved" ? "Saved cutouts" : "Live archive"}</span>
+                <span className="mono">
+                  {collections.join(" + ")} · {origin.files} files
+                  {origin.fetched ? ` · fetched ${origin.fetched.slice(0, 10)}` : ""}
+                </span>
+              </>
+            ) : (
+              "Pick a target to see where its images come from."
+            )}
+          </p>
+        </section>
+
         <section className={s.group} aria-labelledby="cz-view">
           <h3 id="cz-view" className={s.groupTitle}>
             View

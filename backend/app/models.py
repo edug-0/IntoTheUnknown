@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 Fov = Literal[2, 4, 6, 10, 15]
 Band = Literal["auto", "B1", "B2", "B3", "B4", "B5", "B6", "B1-B2", "B1-B3", "all"]
 Stage = Literal["queued", "query", "fetch", "stack", "render", "ready", "error"]
+# auto: saved cutouts when we have them, else live IRSA. saved: bundled demo pack only. live: always IRSA.
+Source = Literal["auto", "saved", "live"]
 
 
 class Health(BaseModel):
@@ -36,6 +38,7 @@ class ViewRequest(BaseModel):
     fov_arcmin: Fov = 6
     band: Band = "auto"
     mode: Literal["stack", "frames"] = "stack"
+    source: Source = "auto"
 
 
 class ApiError(BaseModel):

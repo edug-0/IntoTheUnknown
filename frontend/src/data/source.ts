@@ -62,7 +62,7 @@ const dirOf = (url: string) => url.slice(0, url.lastIndexOf("/") + 1);
 /** docs/PLAN.md 4.4: presets in their default view load from /golden first, which needs no backend. */
 async function tryGolden(q: ViewQuery, signal: AbortSignal): Promise<LoadedView | null> {
   const p = findPreset(q.presetId);
-  if (!p || p.fov !== q.fov_arcmin || p.band !== q.band) return null;
+  if (!p || p.fov !== q.fov_arcmin || p.band !== q.band || q.source === "live") return null;
   const base = `/golden/${p.id}/`;
   let res: Response;
   try {
