@@ -30,7 +30,7 @@ export const DRAWER_ID = "drawer";
 
 const TABS: { value: Panel; label: string }[] = [
   { value: "pass", label: "This pass" },
-  { value: "colours", label: "Colours" },
+  { value: "colours", label: "Spectrum" },
   { value: "brightness", label: "Brightness" },
   { value: "files", label: "Files" },
   { value: "sky", label: "Sky" },
@@ -247,8 +247,12 @@ function FilesTab({ view, index, onSelectEpoch }: { view: LoadedView | null; ind
           </thead>
           <tbody>
             {frames.map((f) => (
-              <tr key={f.obs + f.t_mjd} data-active={f.epoch === index} onClick={() => onSelectEpoch(f.epoch)} title={f.obs}>
-                <td>{f.epoch + 1}</td>
+              <tr key={f.obs + f.t_mjd} data-active={f.epoch === index} title={f.obs}>
+                <td>
+                  <button type="button" className={s.rowButton} onClick={() => onSelectEpoch(f.epoch)} aria-label={`Show pass ${f.epoch + 1}`}>
+                    {f.epoch + 1}
+                  </button>
+                </td>
                 <td>{mjdToDate(f.t_mjd)}</td>
                 <td>D{f.detector}</td>
                 <td>{f.lambda_um.toFixed(3)}</td>

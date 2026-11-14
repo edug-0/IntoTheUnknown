@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { getLightCurve, getSpectrum } from "./api";
 import { AppShell } from "./components/AppShell/AppShell";
 import { CustomizePanel, type CustomizeValues } from "./components/Customize/CustomizePanel";
@@ -40,7 +41,7 @@ function isTyping(el: EventTarget | null) {
 function ownsKeys(el: EventTarget | null) {
   const t = el as HTMLElement | null;
   if (!t) return false;
-  return t.tagName === "BUTTON" || ["radio", "tab", "slider"].includes(t.getAttribute("role") ?? "");
+  return t.tagName === "BUTTON" || ["radio", "tab", "slider", "application"].includes(t.getAttribute("role") ?? "");
 }
 
 export default function App({ source }: { source: ViewSource }) {
@@ -106,8 +107,26 @@ export default function App({ source }: { source: ViewSource }) {
   const idle = useIdle(pb.playing && !drawerOpen && !guideOpen && !tourOn && !reducedMotion && !(mobile && sheetOpen));
 
   const pickPreset = (p: Preset) => update({ ra: p.ra, dec: p.dec, fov: p.fov, band: p.band, target: p.id, epoch: 0, sel: null, ref: 0 });
+  // Starfield jump starts the instant a flight starts, before the target is committed.
+  const [flightKey, setFlightKey] = useState<string | null>(null);
+  /** Leave the home orrery for a target. The clicked ring morphs into the dome with a View Transition. */
+  const openFromHome = (p: Preset) => {
+    const apply = () => flushSync(() => pickPreset(p));
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } };
+    if (reducedMotion || !doc.startViewTransition) return apply();
+    document.documentElement.dataset.vt = "1";
+    try {
+      doc.startViewTransition(apply).finished.finally(() => delete document.documentElement.dataset.vt);
+    } catch {
+      delete document.documentElement.dataset.vt;
+      apply();
+    }
+  };
   const pickCoords = (ra: number, dec: number) => update({ ra, dec, target: null, epoch: 0, sel: null, ref: 0 });
-  const goHome = () => update({ ra: null, dec: null, target: null, epoch: 0, panel: null, mode: "all", sel: null });
+  const goHome = () => {
+    setFlightKey(null);
+    update({ ra: null, dec: null, target: null, epoch: 0, panel: null, mode: "all", sel: null });
+  };
   const openPanel = (panel: Panel | null) => {
     if (mobile && panel) setSheetOpen(false);
     update({ panel, mode: panel === null && url.mode === "inspect" ? "all" : url.mode });
@@ -241,7 +260,7 @@ export default function App({ source }: { source: ViewSource }) {
         .join(" · ")
     : DATA_CREDIT;
 
-  const left = mobile ? GUTTER : customizeOpen ? PANEL_W + GUTTER * 2 : 44 + GUTTER * 2;
+  const left = mobile || load.kind === "idle" ? GUTTER : customizeOpen ? PANEL_W + GUTTER * 2 : 44 + GUTTER * 2;
   const right = mobile ? GUTTER : drawerOpen ? DRAWER_W + RAIL_W + GUTTER * 3 : RAIL_W + GUTTER * 2;
   // The map and the dome are centred on the screen, so the stage reserves the same space on both sides.
   // With the details drawer open there is not enough room, so the dome shifts left instead of shrinking.
@@ -257,7 +276,12 @@ export default function App({ source }: { source: ViewSource }) {
       stageRight={stageRight}
       hideBottom={sheet}
       bottomReserve={sheet ? Math.min(window.innerHeight * 0.6, 480) : 0}
-      backdrop={<SkyBackdrop dim={load.kind !== "idle"} travelKey={url.ra === null || url.dec === null ? null : `${url.ra},${url.dec}`} />}
+      backdrop={
+        <SkyBackdrop
+          dim={load.kind !== "idle"}
+          travelKey={url.ra === null || url.dec === null ? flightKey : `${url.ra},${url.dec}`}
+        />
+      }
       top={
         <>
           <TopBar
@@ -302,6 +326,9 @@ export default function App({ source }: { source: ViewSource }) {
           onSelect={select}
           onRetry={() => setAttempt((a) => a + 1)}
           onPreset={pickPreset}
+          onOpenFromHome={openFromHome}
+          onFlightStart={(p) => setFlightKey(`${p.ra},${p.dec}`)}
+          onCursor={(xy) => update({ sel: xy })}
           onTour={startTour}
         />
       }
@@ -327,7 +354,7 @@ export default function App({ source }: { source: ViewSource }) {
       }
       overlays={
         <>
-          {(!mobile || sheetOpen) && (
+          {(mobile ? sheetOpen : load.kind !== "idle") && (
             <CustomizePanel
               open={customizeOpen}
               onOpenChange={setCustomizeOpen}
@@ -349,7 +376,7 @@ export default function App({ source }: { source: ViewSource }) {
                 ],
                 [
                   { id: "grid", label: "RA, Dec grid on the image", icon: "grid", pressed: overlays.grid, disabled: !available.grid, onClick: () => toggleOverlay("grid") },
-                  { id: "gaia", label: "Gaia positions", icon: "gaia", pressed: overlays.gaia, disabled: !available.gaia, onClick: () => toggleOverlay("gaia") },
+                  { id: "gaia", label: available.gaia ? "Gaia positions" : "Gaia positions (coming soon)", icon: "gaia", pressed: overlays.gaia, disabled: !available.gaia, onClick: () => toggleOverlay("gaia") },
                   { id: "flags", label: "Flagged pixels", icon: "flag", pressed: overlays.flags, disabled: !available.flags, onClick: () => toggleOverlay("flags") },
                   { id: "invert", label: "Invert", icon: "invert", pressed: url.invert, disabled: !view, onClick: () => update({ invert: !url.invert }) },
                 ],

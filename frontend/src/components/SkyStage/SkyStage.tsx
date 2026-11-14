@@ -35,12 +35,17 @@ interface SkyStageProps {
   onSelect: (xy: [number, number] | null) => void;
   onRetry: () => void;
   onPreset: (p: Preset) => void;
+  /** Opening a target from the home orrery (shared-element transition). */
+  onOpenFromHome: (p: Preset) => void;
+  onFlightStart: (p: Preset) => void;
+  /** Move the measuring cursor without opening the drawer (keyboard). */
+  onCursor: (xy: [number, number]) => void;
   onTour: () => void;
 }
 
 export function SkyStage(props: SkyStageProps) {
   const { load } = props;
-  if (load.kind === "idle") return <Home onPreset={props.onPreset} onTour={props.onTour} />;
+  if (load.kind === "idle") return <Home onPick={props.onOpenFromHome} onFlightStart={props.onFlightStart} onTour={props.onTour} />;
   const empty = load.kind === "ready" && load.view.manifest.epochs.length === 0;
   return (
     <section className={s.stage} aria-label="Sky view">
@@ -57,7 +62,7 @@ export function SkyStage(props: SkyStageProps) {
 }
 
 /** First visit: a live holographic orrery, with the five targets on the sky around the solar system. */
-function Home({ onPreset, onTour }: { onPreset: (p: Preset) => void; onTour: () => void }) {
+function Home({ onPick, onFlightStart, onTour }: { onPick: (p: Preset) => void; onFlightStart: (p: Preset) => void; onTour: () => void }) {
   return (
     <section className={s.home} aria-labelledby="home-title">
       <div className={s.homeText}>
@@ -71,7 +76,7 @@ function Home({ onPreset, onTour }: { onPreset: (p: Preset) => void; onTour: () 
         </GlassButton>
       </div>
       <div className={s.homeMap} data-tour="orrery">
-        <Orrery targets={PRESETS} onPick={onPreset} />
+        <Orrery targets={PRESETS} onPick={onPick} onFlightStart={onFlightStart} />
       </div>
     </section>
   );
@@ -111,6 +116,9 @@ function useBox<T extends HTMLElement>() {
 function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: ReactNode }) {
   const { view, ra, dec, index, mode } = props;
   const [frameRef, box] = useBox<HTMLDivElement>();
+  // Decided once at mount: if a View Transition brought the dome in, it already did the zoom.
+  const [zoom] = useState(() => !document.documentElement.dataset.vt);
+  const zoomClass = zoom ? s.zoomIn : "";
   const m = view?.manifest;
   const fovDeg = m ? (m.grid.nx * m.grid.pix_arcsec) / 3600 : props.fov / 60;
   const fovArcmin = fovDeg * 60;
@@ -135,7 +143,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
   return (
     <>
       {box && outer && (
-        <svg className={`${s.sky} ${s.zoomIn}`} width={box.vw} height={box.vh} aria-hidden="true">
+        <svg className={`${s.sky} ${zoomClass}`} width={box.vw} height={box.vh} aria-hidden="true">
           <defs>
             <mask id="frame-hole">
               <rect width={box.vw} height={box.vh} fill="white" />
@@ -162,18 +170,18 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
         </svg>
       )}
 
-      <div className={`${s.column} ${s.zoomIn}`}>
+      <div className={`${s.column} ${zoomClass}`}>
         <div className={`${s.topRow} mono`}>
           <ScaleBar side={box?.side ?? 0} fovArcmin={fovArcmin} />
           {diff ? (
             <span className={s.legend} aria-label="Difference colors: silver is where something was, amber is where it is now">
               <span>
                 <span className={s.swatchNeg} />
-                WAS
+                WAS −
               </span>
               <span>
                 <span className={s.swatchPos} />
-                NOW
+                NOW +
               </span>
             </span>
           ) : m && m.epochs.length === 1 ? (
@@ -186,6 +194,27 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           ref={frameRef}
           className={s.frame}
           data-tour="dome"
+          tabIndex={view ? 0 : -1}
+          role="application"
+          aria-label="SPHEREx image. Arrow keys move the measuring cursor, Enter measures there. Click a star to measure it."
+          onKeyDown={(e) => {
+            if (!view) return;
+            const { nx, ny } = view.manifest.grid;
+            const cur = props.sel ?? [nx >> 1, ny >> 1];
+            const d: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+            if (d[e.key]) {
+              e.preventDefault();
+              e.stopPropagation();
+              const step = e.shiftKey ? 5 : 1;
+              props.onCursor([
+                Math.min(nx - 1, Math.max(0, cur[0] + d[e.key][0] * step)),
+                Math.min(ny - 1, Math.max(0, cur[1] + d[e.key][1] * step)),
+              ]);
+            } else if (e.key === "Enter") {
+              e.preventDefault();
+              props.onSelect(cur);
+            }
+          }}
           onClick={(e) => {
             if (!view) return;
             const r = e.currentTarget.getBoundingClientRect();
@@ -234,6 +263,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           dec={dec}
           sub={props.target?.watch ?? null}
           fixture={view?.label ?? null}
+          provenance={view?.manifest.origin ? `REAL SPHEREx LEVEL 2 · ${view.manifest.origin.kind === "saved" ? "SAVED CUTOUTS" : "LIVE ARCHIVE"} · N UP · E LEFT` : null}
         />
       )}
     </>
@@ -318,7 +348,18 @@ function Leader({ left, top, side }: { left: number; top: number; side: number }
   );
 }
 
-function TargetLabel(p: { className: string; left: number; top: number; maxWidth: number; name: string; ra: number | null; dec: number | null; sub: string | null; fixture: string | null }) {
+function TargetLabel(p: {
+  className: string;
+  left: number;
+  top: number;
+  maxWidth: number;
+  name: string;
+  ra: number | null;
+  dec: number | null;
+  sub: string | null;
+  fixture: string | null;
+  provenance: string | null;
+}) {
   return (
     <div className={`${s.targetLabel} ${p.className}`} style={{ left: p.left, top: p.top, maxWidth: p.maxWidth }}>
       <span className={`display ${s.targetName}`}>{p.name}</span>
@@ -333,6 +374,7 @@ function TargetLabel(p: { className: string; left: number; top: number; maxWidth
         </span>
       )}
       {p.sub && <span className={s.targetSub}>{p.sub}</span>}
+      {p.provenance && <span className={`mono ${s.provenance}`}>{p.provenance}</span>}
       {p.fixture && <span className={`mono ${s.sourceTag}`}>{p.fixture}</span>}
     </div>
   );
@@ -475,7 +517,10 @@ function OverlayLayer({ nx, ny, mask, gaia, epochIndex }: OverlayProps) {
   return (
     <svg className={s.overlay} viewBox={`0 0 ${nx} ${ny}`} aria-hidden="true">
       {flagged.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x + 0.1} y={y + 0.1} width={0.8} height={0.8} fill="none" stroke="var(--flag)" strokeWidth={0.12} />
+        <g key={`${x}-${y}`} stroke="var(--flag)" strokeWidth={0.12} fill="none">
+          <rect x={x + 0.1} y={y + 0.1} width={0.8} height={0.8} />
+          <path d={`M${x + 0.1},${y + 0.9}L${x + 0.9},${y + 0.1}`} />
+        </g>
       ))}
       {gaia?.stars.map((st) => {
         const p = st.track_px[epochIndex];
