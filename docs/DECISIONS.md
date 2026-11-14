@@ -95,3 +95,8 @@ Owner: ompatel
 Decision: Merge the `initialammar` prototype (single `index.html` app, stdlib `server.py` proxy, `demo/` pack of real cutouts for the 5 targets, `tools/fetch_demo.py`, Playwright tests) into main as the product. Supersedes the React + Vite + TS frontend and the FastAPI server-side pipeline in the 00:00 "Stack choice" entry and PLAN §4–5, if the team confirms. Files stay at the repo root for now; `demo/` plays the role of `frontend/public/golden/`.
 Why: main has no app code yet (docs, watcher, spike script only); the prototype already covers the whole MVP and most of Tier 2 (Gaia overlay, light curve, click spectrum, flags, 3-colour, difference, embed) with ~25 h to go. Open alignment gaps are listed in the PR body.
 Owner: dflow11 (team to confirm)
+
+## 2026-11-14 16:30 - The app is Eddie's React frontend + FastAPI backend
+Decision: `eddie/ui-layout` (React + Vite + TS in `frontend/`, FastAPI in `backend/`) is the app, as in the original 00:00 "Stack choice" and PLAN §4. Supersedes the 15:00 "Adopt the SPHEREx Blink prototype" entry. The prototype's `index.html`, `server.py` and its Playwright tests are removed (in git history: PRs #37–#42). `demo/` and `tools/fetch_demo.py` stay: the backend builds the 5 presets from `demo/`, which covers the golden-snapshot decision without `frontend/public/golden/`. One container (Dockerfile) runs FastAPI, which also serves `frontend/dist`.
+Why: the team chose Eddie's frontend. His backend already reads FLAGS by `MSKN` name, applies the spike #4 mask policy, queries SIA before TAP, and limits cutouts through the FOV enum, so the prototype fixes from PRs #40–#42 carry over. Open gap: no Gaia overlay yet (`extras.gaia` is null); PR #36's `gaia.py` is the piece to wire in.
+Owner: dflow11

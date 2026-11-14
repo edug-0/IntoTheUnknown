@@ -91,3 +91,9 @@ def view_spectrum(view_id: str, x: int = Query(...), y: int = Query(...), epoch:
 def view_lightcurve(view_id: str, x: float = Query(...), y: float = Query(...), r_px: float = 2.0):
     pts = views.lightcurve(_job(view_id), x, y, r_px)
     return {"points": pts, "comparison": None}
+
+
+# Production: the built React app (frontend/dist) is served from the same origin. Mounted last so /api and /frames win.
+_DIST = config.ROOT / "frontend" / "dist"
+if _DIST.is_dir():
+    app.mount("/", StaticFiles(directory=_DIST, html=True), name="web")
