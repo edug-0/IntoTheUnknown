@@ -4,7 +4,7 @@ States: `idle`, `planning`, `building`, `in review`, `blocked`, `away`.
 
 | Member | Issue | Branch | State | Next | Blocked | Updated |
 |---|---|---|---|---|---|---|
-| TODO(team) member 1 | | | idle | | | |
+| ompatel | | | idle | | | |
 | TODO(team) member 2 | | | idle | | | |
 | TODO(team) member 3 | | | idle | | | |
 | TODO(team) member 4 | | | idle | | | |
