@@ -13,7 +13,8 @@ from astropy.coordinates import SkyCoord
 from astropy.time import Time
 
 from .. import config
-from ..cache import get_cache, query_key, render_key
+from ..cache import get_cache, render_key
+from ..cache import query_key as sky_query_key
 from ..irsa import fetch
 from ..models import ViewRequest
 from . import photometry, stack
@@ -60,6 +61,11 @@ JOBS: dict[str, Job] = {}
 LOCK = threading.Lock()
 POOL = cf.ThreadPoolExecutor(max_workers=config.MAX_RENDER_JOBS)
 OCTET = "application/octet-stream"
+
+
+def query_key(req: ViewRequest) -> str:
+    """The view id for a request (scripts/validate_integrated.py uses this too). Rules live in cache.blob."""
+    return sky_query_key(req.ra, req.dec, req.fov_arcmin, req.band, req.source)
 
 
 # ---------------------------------------------------------------- frame sources
@@ -318,7 +324,7 @@ def _run(job: Job) -> None:
 
 
 def create(req: ViewRequest) -> Job:
-    qk = query_key(req.ra, req.dec, req.fov_arcmin, req.band, req.source)
+    qk = query_key(req)
     with LOCK:
         job = JOBS.get(qk)
         if job and job.status != "error":
