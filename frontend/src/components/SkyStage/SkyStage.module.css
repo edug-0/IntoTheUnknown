@@ -107,7 +107,7 @@
   height: 100%;
 }
 
-.canvas {
+.canvas[data-smooth="false"] {
   image-rendering: pixelated;
 }
 

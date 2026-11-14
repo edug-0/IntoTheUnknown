@@ -163,6 +163,7 @@ export default function App({ source }: { source: ViewSource }) {
     stretch: url.stretch,
     band: url.band,
     invert: url.invert,
+    smooth: url.smooth,
     gain: url.gain,
     ref,
   };
@@ -173,6 +174,7 @@ export default function App({ source }: { source: ViewSource }) {
       speed: DEFAULTS.speed,
       stretch: DEFAULTS.stretch,
       invert: DEFAULTS.invert,
+      smooth: DEFAULTS.smooth,
       gain: DEFAULTS.gain,
       ref: DEFAULTS.ref,
       source: DEFAULTS.source,
@@ -241,10 +243,11 @@ export default function App({ source }: { source: ViewSource }) {
 
   const left = mobile ? GUTTER : customizeOpen ? PANEL_W + GUTTER * 2 : 44 + GUTTER * 2;
   const right = mobile ? GUTTER : drawerOpen ? DRAWER_W + RAIL_W + GUTTER * 3 : RAIL_W + GUTTER * 2;
-  // The home map is centred on the screen, so it reserves the same space on both sides.
-  const home = load.kind === "idle";
-  const stageLeft = home ? Math.max(left, right) : left;
-  const stageRight = home ? Math.max(left, right) : right;
+  // The map and the dome are centred on the screen, so the stage reserves the same space on both sides.
+  // With the details drawer open there is not enough room, so the dome shifts left instead of shrinking.
+  const centred = !mobile && !drawerOpen;
+  const stageLeft = centred ? Math.max(left, right) : left;
+  const stageRight = centred ? Math.max(left, right) : right;
   const sheet = mobile && (drawerOpen || sheetOpen);
 
   return (
@@ -289,6 +292,7 @@ export default function App({ source }: { source: ViewSource }) {
           mode={url.mode}
           stretch={url.stretch}
           invert={url.invert}
+          smooth={url.smooth}
           gain={url.gain}
           refIndex={ref}
           overlays={overlays}

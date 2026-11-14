@@ -21,6 +21,7 @@ interface SkyStageProps {
   mode: ViewMode;
   stretch: StretchKind;
   invert: boolean;
+  smooth: boolean;
   gain: number;
   /** Reference pass for Difference. */
   refIndex: number;
@@ -197,7 +198,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
         >
           {view ? (
             <>
-              <FrameCanvas view={view} index={index} mode={mode} stretch={props.stretch} invert={props.invert} gain={props.gain} refIndex={props.refIndex} />
+              <FrameCanvas view={view} index={index} mode={mode} stretch={props.stretch} invert={props.invert} smooth={props.smooth} gain={props.gain} refIndex={props.refIndex} />
               <OverlayLayer
                 nx={view.manifest.grid.nx}
                 ny={view.manifest.grid.ny}
@@ -389,19 +390,30 @@ interface CanvasProps {
   mode: ViewMode;
   stretch: StretchKind;
   invert: boolean;
+  smooth: boolean;
   gain: number;
   refIndex: number;
 }
 
-function FrameCanvas({ view, index, mode, stretch, invert, gain, refIndex }: CanvasProps) {
+/** Display upscale for smoothing: the 59 x 59 grid is drawn into a ~1000 px canvas with bilinear filtering. */
+const UPSCALE_TARGET = 1024;
+
+function FrameCanvas({ view, index, mode, stretch, invert, smooth, gain, refIndex }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const { manifest: m, images } = view;
   const { nx, ny } = m.grid;
+  const k = smooth ? Math.max(1, Math.ceil(UPSCALE_TARGET / Math.max(nx, ny))) : 1;
 
   useEffect(() => {
-    const ctx = ref.current?.getContext("2d");
-    if (!ctx) return;
-    const out = ctx.createImageData(nx, ny);
+    const cv = ref.current;
+    const ctx = cv?.getContext("2d");
+    if (!cv || !ctx) return;
+    const src = document.createElement("canvas");
+    src.width = nx;
+    src.height = ny;
+    const sctx = src.getContext("2d");
+    if (!sctx) return;
+    const out = sctx.createImageData(nx, ny);
     const cur = images[index] ?? images[0];
     const r = Math.min(refIndex, images.length - 1);
     if (mode === "diff" && images.length > 1 && index !== r) {
@@ -412,16 +424,21 @@ function FrameCanvas({ view, index, mode, stretch, invert, gain, refIndex }: Can
     } else {
       renderEpoch(out.data, cur, nx, ny, m.stretch, stretch, invert, gain);
     }
-    ctx.putImageData(out, 0, 0);
-  }, [images, index, mode, stretch, invert, gain, refIndex, nx, ny, m]);
+    sctx.putImageData(out, 0, 0);
+    ctx.imageSmoothingEnabled = smooth;
+    ctx.imageSmoothingQuality = "high";
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(src, 0, 0, cv.width, cv.height);
+  }, [images, index, mode, stretch, invert, smooth, gain, refIndex, nx, ny, m, k]);
 
   const e = m.epochs[index] ?? m.epochs[0];
   return (
     <canvas
       ref={ref}
       className={s.canvas}
-      width={nx}
-      height={ny}
+      data-smooth={smooth}
+      width={nx * k}
+      height={ny * k}
       role="img"
       aria-label={`SPHEREx image, epoch ${e.i + 1} of ${m.epochs.length}, ${e.label}${mode === "diff" ? `, difference from pass ${Math.min(refIndex, m.epochs.length - 1) + 1}` : ""}`}
     />

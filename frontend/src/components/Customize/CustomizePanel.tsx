@@ -11,6 +11,7 @@ export interface CustomizeValues {
   stretch: StretchKind;
   band: Band;
   invert: boolean;
+  smooth: boolean;
   gain: number;
   ref: number;
 }
@@ -150,6 +151,12 @@ export function CustomizePanel({ open, onOpenChange, values: v, onChange, onRese
               options={GAINS.map((g) => ({ value: String(g), label: g === 1 ? "Normal" : g < 1 ? (g === 0.25 ? "Max" : "High") : "Low" }))}
             />
           </Field>
+          <Switch
+            label="Smooth pixels"
+            pressed={v.smooth}
+            hint="Off shows SPHEREx's real 6.15″ pixels"
+            onToggle={() => onChange({ smooth: !v.smooth })}
+          />
           <Switch label="Invert" pressed={v.invert} onToggle={() => onChange({ invert: !v.invert })} />
         </section>
 

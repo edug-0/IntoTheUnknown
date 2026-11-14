@@ -27,6 +27,8 @@ export interface ViewState {
   speed: number;
   stretch: StretchKind;
   invert: boolean;
+  /** Smooth the display (bilinear). Off shows SPHEREx's raw 6.15 arcsec pixels. */
+  smooth: boolean;
   /** Multiplies the shared stretch's upper limit (lower = brighter). */
   gain: number;
   /** Reference epoch for Difference and Blink (zero-based). */
@@ -46,6 +48,7 @@ export const DEFAULTS: Omit<ViewState, "ra" | "dec" | "target"> = {
   speed: 2,
   stretch: "asinh",
   invert: false,
+  smooth: true,
   gain: 1,
   ref: 0,
   sel: null,
@@ -94,6 +97,7 @@ export function parseUrl(search: string): ViewState {
     speed: SPEEDS.includes(speed as (typeof SPEEDS)[number]) ? (speed as number) : DEFAULTS.speed,
     stretch: p.get("stretch") === "linear" ? "linear" : "asinh",
     invert: p.get("invert") === "1",
+    smooth: p.get("raw") !== "1",
     gain: GAINS.includes(gain as (typeof GAINS)[number]) ? (gain as number) : DEFAULTS.gain,
     ref: ref !== null && ref >= 1 ? Math.floor(ref) - 1 : 0,
     sel,
@@ -119,6 +123,7 @@ export function toSearch(s: ViewState): string {
   set("speed", s.speed === DEFAULTS.speed ? null : String(s.speed));
   set("stretch", s.stretch === DEFAULTS.stretch ? null : s.stretch);
   set("invert", s.invert ? "1" : null);
+  set("raw", s.smooth ? null : "1");
   set("gain", s.gain === DEFAULTS.gain ? null : String(s.gain));
   set("ref", s.ref === 0 ? null : String(s.ref + 1));
   set("sel", s.sel ? s.sel.join(",") : null);
