@@ -156,17 +156,20 @@ ROWS = [
 TYPES = {"source_id": "long", "radial_velocity": "float", "phot_g_mean_mag": "float"}
 
 
-def votable(rows=ROWS, status_after=None, columns=gaia.GAIA_COLUMNS) -> str:
+def votable(
+    rows=ROWS, status_after=None, columns=gaia.GAIA_COLUMNS, status="OK"
+) -> str:
     """A TAP result like ESA's and ARI's; status_after mimics the trailing INFO."""
     fields = "".join(
         f'<FIELD name="{c}" datatype="{TYPES.get(c, "double")}"/>' for c in columns
     )
     trs = "".join("<TR>" + "".join(f"<TD>{v}</TD>" for v in r) + "</TR>" for r in rows)
     post = f'<INFO name="QUERY_STATUS" value="{status_after}"/>' if status_after else ""
+    pre = f'<INFO name="QUERY_STATUS" value="{status}"/>' if status else ""
     return (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<VOTABLE version="1.4" xmlns="http://www.ivoa.net/xml/VOTable/v1.3">'
-        '<RESOURCE type="results"><INFO name="QUERY_STATUS" value="OK"/>'
+        f'<RESOURCE type="results">{pre}'
         f"<TABLE>{fields}<DATA><TABLEDATA>{trs}</TABLEDATA></DATA></TABLE>{post}"
         "</RESOURCE></VOTABLE>"
     )
@@ -227,7 +230,7 @@ def test_query_parses_votable_with_nan_for_missing(monkeypatch):
     cat = gaia.query_gaia_cone(269.44627, 4.76820, 0.1)
 
     assert len(calls) == 1 and calls[0][0] == gaia.GAIA_TAP_ENDPOINTS[0][1]
-    assert calls[0][1]["timeout"] == 7.0
+    assert calls[0][1]["timeout"] == (7.0, 7.0)  # (connect, read)
     data = calls[0][1]["data"]
     assert data["FORMAT"] == "votable" and data["MAXREC"] == str(gaia.GAIA_MAX_ROWS)
     assert "FROM gaiadr3.gaia_source" in data["QUERY"]
@@ -312,6 +315,39 @@ def test_query_stalled_read_is_bounded(monkeypatch):
         assert time.monotonic() - t0 < 1.0  # 2 endpoints x 0.2 s, plus slack
     finally:
         release.set()
+
+
+def test_repeated_timeouts_do_not_starve_later_queries(monkeypatch):
+    # 20 abandoned workers (more than any small pool) must not delay the next query.
+    release = threading.Event()
+    stalled = FakeResponse(votable(), stall=release)
+    fake_post(monkeypatch, *([stalled] * 20), FakeResponse(votable()))
+    try:
+        for _ in range(10):
+            with pytest.raises(gaia.GaiaUnavailable):
+                query(timeout_s=0.05)
+        t0 = time.monotonic()
+        assert len(query(timeout_s=1.0)) == 3
+        assert time.monotonic() - t0 < 0.5
+    finally:
+        release.set()
+
+
+@pytest.mark.parametrize("status", [None, "UNKNOWN"])
+def test_query_requires_query_status_ok(monkeypatch, status):
+    calls = fake_post(
+        monkeypatch, FakeResponse(votable(status=status)), FakeResponse(votable())
+    )
+    assert len(query()) == 3 and len(calls) == 2  # first endpoint rejected
+
+
+def test_query_without_query_status_everywhere_raises(monkeypatch):
+    bad = FakeResponse(votable(status=None))
+    fake_post(monkeypatch, bad, bad)
+    with pytest.raises(
+        gaia.GaiaUnavailable, match="missing or unexpected QUERY_STATUS"
+    ):
+        query()
 
 
 @pytest.mark.parametrize("ra, dec, r", [(10, 95, 0.1), (np.nan, 0, 0.1), (10, 0, 0)])

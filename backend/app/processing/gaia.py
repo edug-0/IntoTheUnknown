@@ -14,7 +14,7 @@ import os
 import threading
 import time
 import warnings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 from dataclasses import dataclass
 
 import astropy.units as u
@@ -164,10 +164,6 @@ GAIA_TAP_ENDPOINTS = (
 GAIA_MAX_ROWS = 50_000
 MAX_RADIUS_DEG = 1.0
 
-# Workers for the TAP calls, so a stalled read can't hold the caller past its deadline.
-# An abandoned worker stops at its next chunk, or after one read timeout if stalled.
-_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="gaia-tap")
-
 
 class GaiaUnavailable(RuntimeError):
     """The Gaia query could not return a complete result."""
@@ -195,10 +191,13 @@ def _parse_votable(body: bytes) -> tuple[np.ndarray, bool]:
     try:
         vot = votable.parse(io.BytesIO(body), verify="ignore")
         infos = list(vot.infos) + [i for res in vot.resources for i in res.infos]
-        status = {i.value for i in infos if i.name == "QUERY_STATUS"}
+        status = [i.value for i in infos if i.name == "QUERY_STATUS"]
         if "ERROR" in status:
             msg = next(i.content for i in infos if i.value == "ERROR")
             raise _EndpointError(f"TAP error: {(msg or '').strip()[:300]}")
+        # TAP 1.1: QUERY_STATUS=OK leads; a trailing OVERFLOW marks truncation.
+        if not status or status[0] != "OK" or set(status) - {"OK", "OVERFLOW"}:
+            raise _EndpointError(f"missing or unexpected QUERY_STATUS: {status}")
         tab = vot.get_first_table().to_table(use_names_over_ids=True)
     except _EndpointError:
         raise
@@ -224,8 +223,10 @@ def _fetch(url: str, adql: str, timeout_s: float, stop: threading.Event):
         "MAXREC": str(GAIA_MAX_ROWS),
         "QUERY": adql,
     }
-    # timeout bounds connect and each read; _fetch_within bounds the whole call.
-    with requests.post(url, data=data, timeout=timeout_s, stream=True) as r:
+    # (connect, read): a silent peer frees the worker after timeout_s. _fetch_within
+    # bounds the caller's wait, however slowly a peer trickles bytes.
+    timeout = (timeout_s, timeout_s)
+    with requests.post(url, data=data, timeout=timeout, stream=True) as r:
         if r.status_code != 200:
             raise _EndpointError(f"HTTP {r.status_code}: {r.text[:300].strip()}")
         chunks = []
@@ -237,14 +238,25 @@ def _fetch(url: str, adql: str, timeout_s: float, stop: threading.Event):
 
 
 def _fetch_within(url: str, adql: str, timeout_s: float) -> tuple[np.ndarray, bool]:
-    """Connect, download and parse in a worker; give up after timeout_s wall-clock."""
+    """Connect, download and parse in a worker; give up after timeout_s wall-clock.
+
+    Each call gets its own daemon thread, so workers abandoned after a timeout never
+    hold a shared pool or block interpreter exit. They stop at their next chunk.
+    """
     stop = threading.Event()
-    future = _POOL.submit(_fetch, url, adql, timeout_s, stop)
+    future: Future = Future()
+
+    def run():
+        try:
+            future.set_result(_fetch(url, adql, timeout_s, stop))
+        except Exception as e:  # noqa: BLE001 - every error goes to the caller
+            future.set_exception(e)
+
+    threading.Thread(target=run, name="gaia-tap", daemon=True).start()
     try:
         return future.result(timeout=timeout_s)
     except TimeoutError:
         stop.set()
-        future.cancel()
         raise _EndpointError(f"no complete response within {timeout_s:g}s") from None
 
 
