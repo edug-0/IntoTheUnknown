@@ -14,7 +14,7 @@
   --star:#ffd27a; --nebula:#7fd8ff; --violet:#b69cff; --good:#6ee7a8; --bad:#ff7b7b;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --r:16px; --rs:10px;
-  --dome: min(calc(100vw - 90px), calc(100vh - 290px), 980px);   /* dome + player fit on one laptop screen */
+  --dome: min(calc(100vw - 48px), calc(100vh - 175px), 1200px);   /* nearly the whole window; the player floats over its lower edge */
 }
 *{box-sizing:border-box}
 html,body{margin:0;color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -60,7 +60,7 @@ main{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px
 .preset.custom{border-style:dashed}
 
 /* ---------- the dome ---------- */
-.domewrap{position:relative;width:var(--dome);aspect-ratio:1;margin:26px 0 22px}
+.domewrap{position:relative;width:var(--dome);aspect-ratio:1;margin:6px 0 -40px}
 #stage{position:absolute;inset:0;border-radius:50%;overflow:hidden;background:#000;
   box-shadow:0 0 0 1px rgba(150,175,255,.35), 0 0 0 10px rgba(127,216,255,.05), 0 0 80px 10px rgba(80,120,255,.18), 0 30px 90px rgba(0,0,0,.6)}
 #stage::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;box-shadow:inset 0 0 70px 18px rgba(0,0,0,.85)}
@@ -68,12 +68,27 @@ main{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px
 #img{image-rendering:pixelated}
 #img.smooth{image-rendering:auto}
 #ov{cursor:crosshair}
-.rim{position:absolute;inset:-34px;pointer-events:none}
-.rim svg{width:100%;height:100%;overflow:visible}
-.rim text{fill:#c9d4ff;font:600 15px var(--mono);text-anchor:middle;dominant-baseline:middle}
-.rim text.n{fill:var(--star)}
-#hud{position:absolute;left:50%;top:7%;transform:translateX(-50%);font:13px var(--mono);color:#fff;text-shadow:0 0 6px #000,0 0 2px #000;pointer-events:none;text-align:center;white-space:nowrap}
-#hud2{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);font:12px var(--mono);color:#d8e0ff;text-shadow:0 0 4px #000;pointer-events:none;text-align:center;white-space:nowrap}
+/* a thin, slowly turning aurora ring instead of compass letters */
+.rim{position:absolute;inset:-7px;border-radius:50%;pointer-events:none;
+  background:conic-gradient(from 0deg, rgba(127,216,255,0) 0deg, rgba(127,216,255,.55) 60deg, rgba(182,156,255,.45) 140deg, rgba(255,210,122,.5) 220deg, rgba(127,216,255,0) 300deg, rgba(127,216,255,0) 360deg);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation:spinring 80s linear infinite; filter:blur(.3px)}
+@keyframes spinring{to{transform:rotate(360deg)}}
+#ov{touch-action:none}
+#ov.grab{cursor:grabbing}
+.zoombar{position:absolute;right:2%;bottom:9%;display:flex;flex-direction:column;gap:6px;z-index:3}
+.zoombar button{width:40px;height:40px;border-radius:50%;padding:0;font-size:18px;background:rgba(9,14,32,.85);border-color:var(--line2)}
+.zoombar button:hover{border-color:var(--nebula);color:var(--nebula)}
+#zoomVal{font:11px var(--mono);color:var(--dim);text-align:center}
+#tip{position:absolute;pointer-events:none;z-index:4;padding:6px 10px;border-radius:9px;background:rgba(8,12,28,.92);border:1px solid var(--line2);font-size:12.5px;color:var(--text);white-space:nowrap;transform:translate(14px,-50%);display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#tip b{color:var(--star)}
+#tip small{display:block;color:var(--dim);font:11px var(--mono)}
+#hint{position:absolute;left:50%;bottom:27%;transform:translateX(-50%);font-size:12.5px;color:#d8e0ff;background:rgba(8,12,28,.7);border:1px solid var(--line);padding:5px 12px;border-radius:99px;pointer-events:none;transition:opacity .6s;white-space:nowrap}
+#hint.gone{opacity:0}
+.hudpill{display:inline-block;padding:4px 12px;border-radius:99px;background:rgba(8,12,28,.72);border:1px solid var(--line);font:13px var(--mono);color:#fff;text-shadow:none}
+.hudpill b{color:var(--star);font-weight:600}
+#hud{position:absolute;left:50%;top:5%;transform:translateX(-50%);pointer-events:none;text-align:center;white-space:nowrap}
+#hud2{position:absolute;left:50%;bottom:13%;transform:translateX(-50%);font:12px var(--mono);color:#d8e0ff;text-shadow:0 0 4px #000;pointer-events:none;text-align:center;white-space:nowrap}
 #empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:18%;color:var(--dim);pointer-events:none;border-radius:50%}
 #empty b{color:var(--text);font-size:20px;display:block;margin-bottom:6px}
 #spinner{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;border:3px solid rgba(127,216,255,.15);border-top-color:var(--nebula);animation:spin 1s linear infinite;display:none}
@@ -185,8 +200,8 @@ dialog::backdrop{background:rgba(2,3,10,.7);backdrop-filter:blur(3px)}
 body.embed header, body.embed .intro, body.embed .presets, body.embed .views, body.embed #caption, body.embed #right, body.embed #adv{display:none}
 body.embed main{padding:8px}
 @media (max-width:900px){#right{grid-template-columns:1fr}}
-@media (max-width:640px){.views{grid-template-columns:1fr}.preset{min-width:0;flex:1 1 40%}header nav .lbl{display:none}#modeBadge{display:none}header{padding:10px 14px}:root{--dome:calc(100vw - 80px)}#player{flex-wrap:wrap;justify-content:center}#player .grow{order:5;flex-basis:100%}}
-@media (prefers-reduced-motion: reduce){#spinner{animation:none}#adv,#tourHole{transition:none}}
+@media (max-width:640px){.views{grid-template-columns:1fr}.preset{min-width:0;flex:1 1 40%}header nav .lbl{display:none}#modeBadge{display:none}header{padding:10px 14px}:root{--dome:calc(100vw - 28px)}.zoombar{right:-2px;bottom:4%}.zoombar button{width:34px;height:34px}#player{flex-wrap:wrap;justify-content:center}#player .grow{order:5;flex-basis:100%}}
+@media (prefers-reduced-motion: reduce){#spinner,.rim{animation:none}#adv,#tourHole{transition:none}}
 </style>
 </head>
 <body>
@@ -207,11 +222,6 @@ body.embed main{padding:8px}
 </header>
 
 <main>
-  <div class="intro">
-    <h2>Look up at one patch of sky, month after month.</h2>
-    <p>NASA's SPHEREx telescope photographs the whole sky in infrared every six months. Pick an object, press play, watch what moves.</p>
-  </div>
-
   <div class="presets" id="presets" aria-label="Targets"></div>
 
   <div id="banner" class="w"></div>
@@ -220,19 +230,19 @@ body.embed main{padding:8px}
     <div id="stage">
       <canvas id="img" class="smooth"></canvas>
       <canvas id="ov"></canvas>
-      <div id="empty"><div><b>Pick something to look at</b>Choose one of the objects above.</div></div>
+      <div id="empty"><div><b>Look up at one patch of sky, month after month</b>NASA's SPHEREx telescope photographs the whole sky in infrared every six months. Pick an object above to begin.</div></div>
       <div id="spinner"></div>
       <div id="hud"></div>
       <div id="hud2"></div>
+      <div id="hint">Scroll up or pinch to zoom · drag to move · click a star to measure it</div>
     </div>
-    <div class="rim" aria-hidden="true">
-      <svg viewBox="-50 -50 100 100" preserveAspectRatio="xMidYMid meet">
-        <g id="rimTicks" stroke="rgba(170,190,255,.35)" stroke-width=".25"></g>
-        <text class="n" x="0" y="-47.2" style="font-size:3.6px">N</text>
-        <text x="-47.2" y="0" style="font-size:3.6px">E</text>
-        <text x="0" y="47.4" style="font-size:3.6px">S</text>
-        <text x="47.2" y="0" style="font-size:3.6px">W</text>
-      </svg>
+    <div class="rim" aria-hidden="true"></div>
+    <div id="tip"></div>
+    <div class="zoombar" aria-label="Zoom">
+      <button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button>
+      <button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button>
+      <button id="zoomReset" title="Reset view (0, or double-click)" aria-label="Reset view">⟲</button>
+      <div id="zoomVal">1×</div>
     </div>
   </div>
 
@@ -1114,11 +1124,30 @@ function stretchVal(v, lo, hi, soft){
 }
 function diffArr(a,b){ if(!a) return null; const o=new Float32Array(a.length); for(let i=0;i<a.length;i++) o[i]= b? a[i]-b[i] : NaN; return o; }
 // Mono display uses a faint blue-white "night sky" tint rather than pure grey.
+/* ---- the dome's view: zoom z (1 = whole field) and centre (x, y) in grid-pixel units ---- */
+function resetView(){ const h=((S.N||1)-1)/2; S.view={z:1, x:h, y:h}; }
+function viewRect(){ const N=S.N||1, v=S.view||(resetView(),S.view), size=N/v.z; return {size, left:v.x+0.5-size/2, top:v.y+0.5-size/2}; }
+function clampView(){ const N=S.N||1, v=S.view; v.z=clamp(v.z,1,8); const half=N/v.z/2; v.x=clamp(v.x, half-0.5, N-0.5-half); v.y=clamp(v.y, half-0.5, N-0.5-half); }
+function gridToDisp(gx, gy, W){ const {size,left,top}=viewRect(); return [(gx+0.5-left)*W/size, (gy+0.5-top)*W/size]; }
+function dispToGrid(dx, dy, W){ const {size,left,top}=viewRect(); return [dx*size/W+left-0.5, dy*size/W+top-0.5]; }
+function gridToSky(gx, gy){ const h=(S.N-1)/2; return tanInv(-(gx-h)*S.scaleDeg, (h-gy)*S.scaleDeg, S.center[0], S.center[1]); }
+// draw the rendered N×N frame into the dome at screen resolution, through the current zoom/pan
+function blit(){
+  const cv=$("img"), dpr=devicePixelRatio||1, W=Math.max(1,Math.round(cv.clientWidth*dpr)); if(cv.width!==W){ cv.width=W; cv.height=W; }
+  const ctx=cv.getContext("2d"); ctx.fillStyle="#000"; ctx.fillRect(0,0,W,W);
+  if(S.off && S.frames[S.cur]){ const {size,left,top}=viewRect(); ctx.imageSmoothingEnabled=$("smooth").checked; ctx.imageSmoothingQuality="high"; ctx.drawImage(S.off, left, top, size, size, 0, 0, W, W); }
+  drawOverlay(); $("zoomVal").textContent=`${(S.view?.z||1).toFixed(1).replace(/\.0$/,"")}×`;
+}
+function zoomAt(factor, dx, dy, W){ // keep the sky point under (dx,dy) fixed while zooming
+  if(!S.frames.length) return; const [gx,gy]=dispToGrid(dx,dy,W); S.view.z=clamp(S.view.z*factor,1,8);
+  const size=S.N/S.view.z; S.view.x = gx+0.5 - dx*size/W + size/2 - 0.5; S.view.y = gy+0.5 - dy*size/W + size/2 - 0.5; clampView(); blit(); hideHint(); }
+function hideHint(){ $("hint").classList.add("gone"); }
 function render(){
-  const cv=$("img"), N=S.N||1; const f=S.frames[S.cur];
-  cv.width=N; cv.height=N; const ctx=cv.getContext("2d"); const id=ctx.createImageData(N,N); const px=id.data;
-  $("empty").style.display = f? "none" : "grid";
-  if(!f){ ctx.clearRect(0,0,N,N); drawOverlay(); $("hud").innerHTML=""; return; }
+  const N=S.N||1; const f=S.frames[S.cur];
+  if(!S.off) S.off=document.createElement("canvas");
+  const cv=S.off; if(cv.width!==N){ cv.width=N; cv.height=N; } const ctx=cv.getContext("2d"); const id=ctx.createImageData(N,N); const px=id.data;
+  $("empty").style.display = f? "none" : "grid"; $("hint").style.display = f? "" : "none";
+  if(!f){ ctx.clearRect(0,0,N,N); blit(); $("hud").innerHTML=""; return; }
   const perFrame=$("perFrame").checked, showNan=$("ovNan").checked;
   if(S.disp==="rgb"){
     const ch=["r","g","b"]; const sc={};
@@ -1145,19 +1174,17 @@ function render(){
       px[p*4+3]=255; }
   }
   ctx.putImageData(id,0,0);
-  drawOverlay();
-  const dets=[...new Set(f.exps.map(e=>e.det))].sort().map(d=>"D"+d).join(" ");
-  $("hud").innerHTML = `${f.label} &nbsp; ${S.cur+1}/${S.frames.length}<br>${f.exps.length} exp · ${dets}${S.disp==="diff"? ` · minus ${S.ref==="prev"?"previous":S.ref==="mean"?"mean":"frame "+(S.refIdx+1)}`:""}`;
+  blit();
+  const nice = S.group==="all"? f.label : new Date(f.label+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+  const cmp = S.disp==="diff"? ` · vs ${S.ref==="prev"?"the visit before":S.ref==="mean"?"the average":"visit "+(S.refIdx+1)}` : "";
+  $("hud").innerHTML = `<span class="hudpill"><b>${nice}</b> · visit ${S.cur+1} of ${S.frames.length}${cmp}</span>`;
   [...$("timeline").children].forEach((b,i)=>{ b.classList.toggle("cur", i===S.cur); b.classList.toggle("ref", S.disp==="diff" && S.ref==="first" && i===S.refIdx); });
 }
-function skyToDisp(ra,dec){
-  const [xi,eta]=tanFwd(ra,dec,S.center[0],S.center[1]); const half=(S.N-1)/2;
-  const W=$("ov").width; const k=W/S.N;
-  return [(half - xi/S.scaleDeg + 0.5)*k, (half - eta/S.scaleDeg + 0.5)*k];
-}
+function skyToGrid(ra,dec){ const [xi,eta]=tanFwd(ra,dec,S.center[0],S.center[1]); const h=(S.N-1)/2; return [h - xi/S.scaleDeg, h - eta/S.scaleDeg]; }
+function skyToDisp(ra,dec){ const [gx,gy]=skyToGrid(ra,dec); return gridToDisp(gx,gy,$("ov").width); }
 function drawOverlay(){
   const ov=$("ov"), W=Math.max(1,ov.clientWidth*devicePixelRatio); ov.width=W; ov.height=W; const ctx=ov.getContext("2d"); ctx.clearRect(0,0,W,W);
-  const f=S.frames[S.cur]; if(!f || !S.target) return; const k=W/S.N, dpr=devicePixelRatio;
+  const f=S.frames[S.cur]; if(!f || !S.target) return; const k=W*(S.view?.z||1)/S.N, dpr=devicePixelRatio;
   ctx.lineWidth=1.2*dpr;
   if($("ovGaia").checked && S.gaia.length){
     ctx.strokeStyle="rgba(127,216,255,.75)";
@@ -1183,11 +1210,11 @@ function drawOverlay(){
     ctx.strokeStyle="#6ee7a8"; ctx.lineWidth=1.2*dpr; ctx.beginPath(); ctx.arc(x,y,A*k,0,7); ctx.stroke(); ctx.setLineDash([2*dpr,2*dpr]);
     for(const r of [a1,a2]){ ctx.beginPath(); ctx.arc(x,y,r*k,0,7); ctx.stroke(); } ctx.setLineDash([]); }
   if($("ovCompass").checked){
-    // scale bar, centred low inside the dome (north/east are marked on the dome's rim)
+    // scale bar, centred low inside the dome (adapts to the zoom level)
     ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.fillStyle="rgba(255,255,255,.85)"; ctx.font=`${12*dpr}px ui-monospace,monospace`; ctx.textAlign="center";
-    const arcmin = S.fovDeg*60>=10? 2 : 1; const len=arcmin/60/S.scaleDeg*k; const by=W*0.87;
+    const vis=S.fovDeg*60/(S.view?.z||1), arcmin = vis>=10? 2 : vis>=3? 1 : 0.5; const len=arcmin/60/S.scaleDeg*k; const by=W*0.80;
     ctx.beginPath(); ctx.moveTo(W/2-len/2,by); ctx.lineTo(W/2+len/2,by); ctx.moveTo(W/2-len/2,by-4*dpr); ctx.lineTo(W/2-len/2,by+4*dpr); ctx.moveTo(W/2+len/2,by-4*dpr); ctx.lineTo(W/2+len/2,by+4*dpr); ctx.stroke();
-    ctx.fillText(`${arcmin} arcmin`, W/2, by-8*dpr); ctx.textAlign="start";
+    ctx.fillText(arcmin<1? "30 arcsec" : `${arcmin} arcmin`, W/2, by-8*dpr); ctx.textAlign="start";
   }
 }
 function renderTimeline(){
@@ -1339,6 +1366,7 @@ function setupGeometry(t){
   S.target=t; S.fovDeg=+$("fov").value/60;
   S.N = Math.round(S.fovDeg/S.scaleDeg); if(S.N%2===0) S.N++;
   S.center = propagate(t, 2026.0); // centre of the grid: the target near mid-survey
+  resetView();
 }
 async function load(){
   stop(); const token=++S.loadToken; srcNote();
@@ -1533,7 +1561,7 @@ function init(){
   $("fps").oninput=()=>$("fpsVal").textContent=`${$("fps").value} fps`;
   $("clip").oninput=()=>{ $("clipVal").textContent=(+$("clip").value).toFixed(2); S.scale=null; render(); }; $("clipVal").textContent=$("clip").value;
   for(const id of ["perFrame","ovTarget","ovGaia","ovWise","ovCompass","ovNan"]) $(id).onchange=()=>{ S.scale=null; render(); };
-  $("smooth").onchange=()=>$("img").classList.toggle("smooth",$("smooth").checked);
+  $("smooth").onchange=()=>blit();
   $("goBtn").onclick=()=>{ window.openAdvanced(false); load(); };
   $("resolveBtn").onclick=async()=>{ const n=$("name").value.trim(); if(!n) return; setStatus(`Looking up “${n}”…`);
     try{ const r=await resolveName(n); $("ra").value=r.ra.toFixed(7); $("dec").value=r.dec.toFixed(7); $("pmra").value=r.pmra; $("pmdec").value=r.pmdec; $("plx").value=r.plx; $("epoch").value=2000; setStatus(`Found ${n}. Press Load images.`); }
@@ -1543,18 +1571,46 @@ function init(){
   const setRef=()=>{ S.refIdx=S.cur; S.ref="first"; [...$("refSeg").children].forEach(b=>b.classList.toggle("on",b.dataset.v==="first")); S.scale=null; render(); setStatus(`Frame ${S.cur+1} is now the difference reference.`); };
   $("setRefBtn").onclick=setRef;
   $("linkBtn").onclick=async()=>{ updateURL(); try{ await navigator.clipboard.writeText(location.href); setStatus("Link copied. Add &embed=1 for an embeddable player."); }catch(e){ setStatus("Link: "+location.href); } };
-  $("ov").addEventListener("click", ev=>{
-    if(!S.target||!S.exps.length) return; const r=$("ov").getBoundingClientRect(); const k=S.N/r.width; const half=(S.N-1)/2;
-    const i=(ev.clientX-r.left)*k-0.5, j=(ev.clientY-r.top)*k-0.5; const [ra,dec]=tanInv(-(i-half)*S.scaleDeg,(half-j)*S.scaleDeg,S.center[0],S.center[1]);
-    $("specTrack").checked=false; S.phot={ra,dec,track:false}; updatePhot(); activateTab("spec");
-  });
-  $("ov").addEventListener("mousemove", ev=>{
-    if(!S.target||!S.frames.length) return; const r=$("ov").getBoundingClientRect(); const k=S.N/r.width; const half=(S.N-1)/2;
-    const i=Math.floor((ev.clientX-r.left)*k), j=Math.floor((ev.clientY-r.top)*k); const [ra,dec]=tanInv(-(i-half)*S.scaleDeg,(half-j)*S.scaleDeg,S.center[0],S.center[1]);
-    const f=S.frames[S.cur]; const v=f.img? f.img[j*S.N+i] : NaN;
-    $("hud2").textContent=`${fmtRA(ra)} ${fmtDec(dec)}${Number.isFinite(v)?`  ${v.toFixed(4)} MJy/sr`:""}`;
-  });
-  $("ov").addEventListener("mouseleave", ()=>$("hud2").textContent="");
+  // ---- dome interaction: drag to pan, wheel/pinch to zoom, click to measure, hover to identify ----
+  const ov=$("ov"), ptrs=new Map(); let drag=null;
+  const local=ev=>{ const r=ov.getBoundingClientRect(); return [ev.clientX-r.left, ev.clientY-r.top, r.width]; };
+  ov.addEventListener("pointerdown", ev=>{ if(!S.frames.length) return; ov.setPointerCapture(ev.pointerId); ptrs.set(ev.pointerId,[ev.clientX,ev.clientY]);
+    drag={x:ev.clientX, y:ev.clientY, vx:S.view.x, vy:S.view.y, moved:false, pinch: ptrs.size===2? {d:Math.hypot(...[...ptrs.values()].reduce((a,b)=>[a[0]-b[0],a[1]-b[1]])), z:S.view.z} : null}; });
+  ov.addEventListener("pointermove", ev=>{
+    if(drag && ptrs.has(ev.pointerId)){ ptrs.set(ev.pointerId,[ev.clientX,ev.clientY]);
+      const [,,Wc]=local(ev);
+      if(ptrs.size===2 && drag.pinch){ const pts=[...ptrs.values()], d=Math.hypot(pts[0][0]-pts[1][0], pts[0][1]-pts[1][1]); const r=ov.getBoundingClientRect();
+        const mx=(pts[0][0]+pts[1][0])/2-r.left, my=(pts[0][1]+pts[1][1])/2-r.top; zoomAt((drag.pinch.z*d/drag.pinch.d)/S.view.z, mx, my, Wc); drag.moved=true; return; }
+      const dx=ev.clientX-drag.x, dy=ev.clientY-drag.y; if(Math.hypot(dx,dy)>4) drag.moved=true;
+      if(drag.moved && S.view.z>1){ const size=S.N/S.view.z; S.view.x=drag.vx-dx*size/Wc; S.view.y=drag.vy-dy*size/Wc; clampView(); blit(); ov.classList.add("grab"); hideHint(); }
+      return; }
+    hover(ev); });
+  const endPtr=ev=>{ ptrs.delete(ev.pointerId); ov.classList.remove("grab");
+    if(drag && !drag.moved && ptrs.size===0 && ev.type==="pointerup"){ measureAt(ev); }
+    if(ptrs.size===0) drag=null; };
+  ov.addEventListener("pointerup", endPtr); ov.addEventListener("pointercancel", endPtr);
+  ov.addEventListener("wheel", ev=>{ if(!S.frames.length) return; if(ev.deltaY>0 && S.view.z<=1 && !ev.ctrlKey) return; ev.preventDefault(); const [x,y,Wc]=local(ev); zoomAt(Math.exp(-ev.deltaY*0.0015), x, y, Wc); }, {passive:false});
+  ov.addEventListener("dblclick", ()=>{ resetView(); blit(); });
+  const zoomBtn=f=>{ const W=ov.getBoundingClientRect().width; zoomAt(f, W/2, W/2, W); };
+  $("zoomIn").onclick=()=>zoomBtn(1.5); $("zoomOut").onclick=()=>zoomBtn(1/1.5); $("zoomReset").onclick=()=>{ resetView(); blit(); };
+  function measureAt(ev){ if(!S.target||!S.exps.length) return; const [x,y,Wc]=local(ev); const [gx,gy]=dispToGrid(x,y,Wc); const [ra,dec]=gridToSky(gx,gy);
+    $("specTrack").checked=false; S.phot={ra,dec,track:false}; updatePhot(); activateTab("spec"); hideHint();
+    setStatus(`Measuring ${fmtRA(ra)} ${fmtDec(dec)}. The green rings show the measurement area; scroll down for its colours and brightness.`); }
+  // hover: coordinates + the nearest known object under the cursor
+  function hover(ev){
+    if(!S.target||!S.frames.length) return; const [x,y,Wc]=local(ev); const [gx,gy]=dispToGrid(x,y,Wc); const [ra,dec]=gridToSky(gx,gy);
+    const f=S.frames[S.cur], i=Math.round(gx), j=Math.round(gy), v=f.img&&i>=0&&j>=0&&i<S.N&&j<S.N? f.img[j*S.N+i] : NaN;
+    $("hud2").textContent=`${fmtRA(ra)} ${fmtDec(dec)}${Number.isFinite(v)?`  ·  ${v.toFixed(3)} MJy/sr`:""}`;
+    const near=(r2,lim)=>Math.hypot(r2[0]-gx,r2[1]-gy)<=lim; let html="";
+    const tp=skyToGrid(...propagate(S.target,f.year));
+    if(near(tp,2.5)) html=`<b>★ ${esc(S.target.name)}</b><small>where it should be on ${f.label.slice(0,10)}</small>`;
+    else { const tol=1.6;
+      const g=$("ovGaia").checked? S.gaia.find(s=>near(skyToGrid(...propagate(s,f.year)),tol)) : null;
+      const w=!g && $("ovWise").checked? S.wise.find(s=>near(skyToGrid(s.ra,s.dec),tol)) : null;
+      if(g) html=`<b>Gaia DR3 star</b><small>G = ${g.g.toFixed(1)} mag</small>`; else if(w) html=`<b>AllWISE source</b><small>W2 = ${(w.w2??NaN).toFixed(1)} mag${w.target?" · the target in 2010":""}</small>`; }
+    const tip=$("tip"); if(html){ const r=ov.getBoundingClientRect(), wr=ov.closest(".domewrap").getBoundingClientRect(); tip.innerHTML=html; tip.style.left=(ev.clientX-wr.left)+"px"; tip.style.top=(ev.clientY-wr.top)+"px"; tip.style.display="block"; } else tip.style.display="none";
+  }
+  $("ov").addEventListener("pointerleave", ()=>{ $("hud2").textContent=""; $("tip").style.display="none"; });
   $("specLog").onchange=drawSpectrum; $("specTrack").onchange=updatePhot; $("specApcor").onchange=updatePhot;
   $("tabs").onclick=e=>{ const t=e.target.dataset?.t; if(t) activateTab(t); };
   $("aladinBtn").onclick=openAladin;
@@ -1563,9 +1619,7 @@ function init(){
   $("modeBadge").onclick=()=>adv(true);
   window.openAdvanced=adv;
   $("tourBtn").onclick=startTour; $("tourNext").onclick=()=>tourGo(tourI+1); $("tourSkip").onclick=endTour;
-  // degree ticks around the dome's rim, like a planetarium horizon ring
-  $("rimTicks").innerHTML = Array.from({length:72},(_,i)=>{ const a=i*5*D2R, r1=i%18===0? 44.2 : i%6===0? 44.8 : 45.4, r2=46.2;
-    return `<line x1="${(r1*Math.sin(a)).toFixed(2)}" y1="${(-r1*Math.cos(a)).toFixed(2)}" x2="${(r2*Math.sin(a)).toFixed(2)}" y2="${(-r2*Math.cos(a)).toFixed(2)}"/>`; }).join("");
+
   $("hips").onchange=openAladin;
   $("cubeSlice").oninput=applySlice; cubeLabel();
   document.addEventListener("click", e=>{ const a=e.target.closest("[data-about]"); if(a){ e.preventDefault(); openAbout(a.dataset.about); } });
@@ -1576,8 +1630,9 @@ function init(){
     if(e.key===" "){ e.preventDefault(); S.playing?stop():play(); } else if(e.key==="ArrowRight"){stop();step(1);} else if(e.key==="ArrowLeft"){stop();step(-1);}
     else if(e.key==="d"||e.key==="D") setDisp("diff"); else if(e.key==="c"||e.key==="C") setDisp("rgb"); else if(e.key==="m"||e.key==="M") setDisp("gray");
     else if(e.key==="r"||e.key==="R") setRef(); else if(e.key==="?") openAbout("use");
-    else if(e.key==="Escape"){ window.openAdvanced(false); endTour(); } });
-  window.addEventListener("resize", ()=>{ drawOverlay(); drawSpectrum(); drawLC(); });
+    else if(e.key==="Escape"){ window.openAdvanced(false); endTour(); }
+    else if(e.key==="+"||e.key==="="){ $("zoomIn").click(); } else if(e.key==="-"||e.key==="_"){ $("zoomOut").click(); } else if(e.key==="0"){ $("zoomReset").click(); } });
+  window.addEventListener("resize", ()=>{ blit(); drawSpectrum(); drawLC(); });
   loadDemoIndex().then(idx=>{ const n=Object.values(idx.targets||{}).filter(t=>t.files>0);
     $("demoInfo").textContent = n.length? `This copy holds ${n.reduce((s,t)=>s+t.files,0)} cutouts of ${n.length} targets, built ${String(idx.generated||"").slice(0,10)}.` : "This copy hasn't been built yet.";
     if(!n.length && S.src==="demo" && !new URLSearchParams(location.search).get("src")){ S.src="live"; syncers.src(); srcNote(); }
@@ -1633,18 +1688,29 @@ function defaultSlice(){ const ds=[...S.dets].map(d=>DETS[d-1]); const lam=Math.
 function applySliceWhenReady(tries=0){ applySlice(); const L=S.aladin?.getBaseImageLayer?.();
   if(isCube() && tries<20 && (!L || !L.added || L.slice!==+$("cubeSlice").value)) setTimeout(()=>applySliceWhenReady(tries+1), 500); }
 function applySlice(){ cubeLabel(); if(!S.aladin||!isCube()) return; const L=S.aladin.getBaseImageLayer?.(); if(L?.setSliceNumber) L.setSliceNumber(+$("cubeSlice").value); }
+// mark the target and the Gaia stars the app already has, so the map needs no extra catalogue server
+function aladinMarkers(){
+  if(!S.aladin || !window.A) return;
+  try{
+    for(const c of S.aladinCats||[]) S.aladin.removeLayer?.(c);
+    S.aladinCats=[];
+    if(S.gaia.length){ const cat=A.catalog({name:"Gaia DR3 stars", sourceSize:12, color:"#7fd8ff", shape:"circle"}); S.aladin.addCatalog(cat);
+      cat.addSources(S.gaia.map(s=>{ const [ra,dec]=propagate(s,2026.0); return A.source(ra,dec,{G:s.g.toFixed(1)}); })); S.aladinCats.push(cat); }
+    const tc=A.catalog({name:S.target.name, sourceSize:22, color:"#ffd27a", shape:"cross"}); S.aladin.addCatalog(tc);
+    const [ra,dec]=propagate(S.target,2026.0); tc.addSources([A.source(ra,dec,{name:S.target.name})]); S.aladinCats.push(tc);
+  }catch(e){ console.warn("Aladin markers", e); }
+}
 async function openAladin(){
   if(!S.center){ aladinMsg("Load a target first."); return; }
   $("cubeBox").style.display = isCube()? "block":"none";
   const target=`${S.center[0]} ${S.center[1]}`, url=$("hips").value, fov=Math.max(S.fovDeg*2,0.05);
-  if(S.aladin){ if(S.aladinSurvey!==url){ S.aladin.setBaseImageLayer(url); S.aladinSurvey=url; } S.aladin.gotoRaDec(S.center[0],S.center[1]); S.aladin.setFoV(fov); applySliceWhenReady(); return; }
+  if(S.aladin){ if(S.aladinSurvey!==url){ S.aladin.setBaseImageLayer(url); S.aladinSurvey=url; } S.aladin.gotoRaDec(S.center[0],S.center[1]); S.aladin.setFoV(fov); applySliceWhenReady(); aladinMarkers(); return; }
   aladinMsg("Loading Aladin Lite…");
   try{
     await loadAladinScript(); await A.init;
     $("aladin").innerHTML="";
-    S.aladin = A.aladin("#aladin",{survey:url, fov, target, showReticle:true, showFullscreenControl:true, showLayersControl:true, showGotoControl:false, showShareControl:false});
-    S.aladinSurvey=url; applySliceWhenReady();
-    try{ S.aladin.addCatalog(A.catalogFromVizieR("I/355/gaiadr3", target, S.fovDeg, {onClick:"showTable", color:"#7fd8ff", name:"Gaia DR3"})); }catch(e){ console.warn("Gaia overlay in Aladin failed", e); }
+    S.aladin = A.aladin("#aladin",{survey:url, fov, target, showReticle:false, showFullscreenControl:true, showLayersControl:true, showGotoControl:false, showShareControl:false, log:false});
+    S.aladinSurvey=url; applySliceWhenReady(); aladinMarkers();
   }catch(e){ S.aladin=null; aladinMsg(`Aladin Lite couldn't load (${esc(e.message)}). It needs an internet connection to <code>cdn.jsdelivr.net</code> and the survey servers.`); }
 }
 init();

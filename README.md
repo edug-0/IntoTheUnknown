@@ -35,7 +35,7 @@ as GitHub Pages. Without the proxy, *Live IRSA* may be blocked by the browser, b
    - **Demo pack**: real SPHEREx cutouts bundled in `demo/`. Loads instantly, even offline.
    - **Live IRSA**: the newest data straight from the archive.
    - **Simulated**: a synthetic sky for offline demos and for checking the analysis.
-3. **Press play** (space bar). Step with ← →. The dashed gold line is where the target *should* be, given its
+3. **Press play** (space bar). Scroll up or pinch on the dome to zoom, drag to move around, hover a star to identify it, and click to measure it. Step with ← →. The dashed gold line is where the target *should* be, given its
    known motion. The cross-hair marks the current frame's date.
 4. **Explore.**
    - *Difference* (key D) subtracts a reference frame. A moving object becomes an orange/blue pair.
@@ -148,6 +148,7 @@ pip install playwright numpy astropy
 python3 server.py --port 8811 &
 python3 tests/test_sim.py /tmp/shots --base http://127.0.0.1:8811       # simulated known-answer test
 python3 tests/test_demo.py /tmp/shots --base http://127.0.0.1:8811      # real demo pack: wavelengths, unbiased photometry
+python3 tests/test_ui.py /tmp/shots --base http://127.0.0.1:8811 --live # every button, view, tab and interaction (46 checks)
 python3 tests/mock_server.py . 8765 &                                    # mock IRSA with real-format FITS
 python3 tests/run_test.py /tmp/shots                                     # live path against the mock archive
 ```
