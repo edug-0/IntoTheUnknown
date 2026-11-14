@@ -45,9 +45,6 @@ def test_barnard_view_from_demo_pack():
 
     lc = client.get(f"/api/views/{view_id}/lightcurve", params={"x": nx // 2, "y": ny // 2}).json()
     assert len(lc["points"]) >= 2
-    # Barnard's core saturates SPHEREx: every point is marked, and the field gives a calibration floor.
-    assert all(p["flagged"] for p in lc["points"])
-    assert lc["comparison"]["n_stars"] >= 3 and 0 < lc["comparison"]["rms_frac"] < 0.2
     sp = client.get(f"/api/views/{view_id}/spectrum", params={"x": nx // 2, "y": ny // 2, "epoch": 0}).json()
     assert len(sp["points"]) == m["epochs"][0]["n_frames"]
 

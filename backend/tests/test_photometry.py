@@ -86,3 +86,25 @@ def test_comparison_without_spectral_fit_would_fail():
 def test_comparison_skips_the_target_and_needs_three_stars():
     frames = field(stars=((30, 30), (12, 12), (48, 14)))  # the first star sits on the target
     assert photometry.comparison(frames, target_xy=(30, 30)) is None
+
+
+def test_barnard_lightcurve_end_to_end():
+    """Barnard's core saturates SPHEREx: every point is marked, and the field gives a calibration floor."""
+    import time
+
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    r = client.post("/api/views", json={"ra": 269.44627, "dec": 4.7682, "fov_arcmin": 6, "band": "B1-B2"})
+    view_id = r.json()["view_id"]
+    deadline = time.time() + 60
+    while (body := client.get(f"/api/views/{view_id}").json())["status"] not in ("ready", "error"):
+        assert time.time() < deadline, "view did not finish"
+        time.sleep(0.2)
+    assert body["status"] == "ready", body
+    n = client.get(body["manifest_url"]).json()["grid"]["nx"]
+    lc = client.get(f"/api/views/{view_id}/lightcurve", params={"x": n // 2, "y": n // 2}).json()
+    assert lc["points"] and all(p["flagged"] for p in lc["points"])
+    assert lc["comparison"]["n_stars"] >= 3 and 0 < lc["comparison"]["rms_frac"] < 0.2
