@@ -56,3 +56,8 @@ Owner: TODO(team)
 Decision: The author squash-merges their own PR once CI is green. No second reviewer is required. Supersedes "any teammate other than the author reviews and merges" in the Git workflow entry above. PRs, short-lived branches and "never commit to main" stay.
 Why: Speed over safety for a 30-hour build. If main breaks, revert the merge via a PR first, then debug (`AGENTS.md` §11).
 Owner: dflow11
+
+## 2026-11-14 13:31 - Gaia fallback is ARI Heidelberg TAP, not MAST
+Decision: `query_gaia_cone` tries the ESA Gaia TAP, then ARI Heidelberg's TAP with the same ADQL. MAST is not used. POINT and CIRCLE carry `'ICRS'`, and results that hit MAXREC are refused.
+Why: astroquery's `Catalogs.query_region(catalog="Gaia", version=3)` warns and silently returns Gaia DR2 (epoch 2015.5). ARI returned the same 1976 rows as ESA with identical values. ARI's ADQL parser rejects POINT/CIRCLE without `'ICRS'`. Both servers truncate CSV silently at MAXREC.
+Owner: ompatel

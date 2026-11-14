@@ -4,11 +4,7 @@ Needs: numpy astropy astroquery reproject azure-storage-blob azure-identity
 Run:   python docs/skeletons/check.py
 """
 
-import astropy.units as u
-from astropy.coordinates import SkyCoord
-from astropy.time import Time
 from cache import query_key, render_key
-from gaia import predict_radec
 from query import dedupe
 from stack import channel_of, group_epochs
 
@@ -37,13 +33,6 @@ assert [len(e) for e in epochs] == [3, 2, 3, 1], epochs
 assert channel_of({"detector": 1, "lam_um": 0.75}) == (1, 0)
 assert channel_of({"detector": 1, "lam_um": 1.09}) == (1, 16)
 
-# Gaia propagation, Barnard's Star at 2026.0: proper motion alone lands within 1 arcsec of the preset position,
-# and the parallax term is non-zero but no larger than the parallax itself (547 mas).
-t = Time(2026.0, format="jyear", scale="tcb")
-barnard = (269.448503, 4.739420, -801.55, 10362.39)
-pm_only = SkyCoord(*predict_radec(*barnard, None, None, t), unit="deg")
-full = SkyCoord(*predict_radec(*barnard, 546.98, None, t), unit="deg")
-assert pm_only.separation(SkyCoord(269.44627, 4.76820, unit="deg")) < 1 * u.arcsec
-assert 0.05 * u.arcsec < full.separation(pm_only) <= 0.55 * u.arcsec, full.separation(pm_only).arcsec
+# Gaia propagation checks moved to backend/tests/test_gaia_barnard.py with gaia.py (#8).
 
 print("skeleton checks passed")

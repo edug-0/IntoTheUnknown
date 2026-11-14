@@ -31,6 +31,8 @@ Every URL below was checked on 2026-11-14: it either returned HTTP 200 with a ma
 
 ## Other data
 - Gaia ESA archive: https://gea.esac.esa.int/archive/
+- Gaia DR3 TAP, primary (ESA): https://gea.esac.esa.int/tap-server/tap/sync
+- Gaia DR3 TAP, fallback (ARI Heidelberg): https://gaia.ari.uni-heidelberg.de/tap/sync
 - Gaia credits and acknowledgement: https://www.cosmos.esa.int/web/gaia-users/credits
 - SIMBAD: TODO(team): url (CDS returned 404 on 2026-11-14)
 - WiseView: http://byw.tools/wiseview (responds, but the page has no title to match against; confirm in a browser)
