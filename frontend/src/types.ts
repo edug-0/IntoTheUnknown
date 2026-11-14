@@ -68,11 +68,11 @@ export interface Epoch {
   lambda_um: [number, number];
   channels: number;
   flagged_px: Record<string, number>;
-  astrom_resid_px: number;
+  astrom_resid_px: number | null;
   phot_scale: number;
   image: string;
-  mask?: string;
-  png?: string;
+  mask?: string | null;
+  png?: string | null;
 }
 
 export interface Frame {
@@ -94,6 +94,8 @@ export interface Manifest {
   grid: { nx: number; ny: number; pix_arcsec: number; wcs: Record<string, string | number> };
   catalog: { version: string; collections: string[] };
   stretch: { kind: "asinh"; vmin: number; vmax: number; beta: number };
+  /** False when no channel is common to every epoch (stacks then use the channel union). */
+  bandpass_matched?: boolean;
   epochs: Epoch[];
   frames: Frame[];
   extras: { gaia: string | null; lightcurve: string | null; cube: string | null };
@@ -118,11 +120,20 @@ export interface GaiaResult {
 export interface SpectrumPoint {
   lambda_um: number;
   bw_um: number;
-  flux_mjysr: number;
-  err: number;
+  flux_mjysr: number | null;
+  err: number | null;
   t_mjd: number;
   detector: number;
   flagged: boolean;
+}
+
+export interface Spectrum {
+  points: SpectrumPoint[];
+}
+
+export interface LightCurve {
+  points: LightCurvePoint[];
+  comparison: { n_stars: number; rms_frac: number } | null;
 }
 
 export interface LightCurvePoint {
