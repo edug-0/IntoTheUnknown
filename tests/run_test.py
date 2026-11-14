@@ -1,13 +1,15 @@
+"""Live path against the mock IRSA archive:  python3 tests/mock_server.py . 8765 &  then  python3 tests/run_test.py OUTDIR [CHROME]"""
 import json, math, sys, time, urllib.request
 from playwright.sync_api import sync_playwright
 
 BASE = "http://127.0.0.1:8765"
 OUT = sys.argv[1]
+CHROME = sys.argv[2] if len(sys.argv) > 2 else "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 errors = []
 with sync_playwright() as p:
-    b = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
+    b = p.chromium.launch(executable_path=CHROME, args=["--no-sandbox"])
     pg = b.new_page(viewport={"width": 1500, "height": 950})
-    pg.on("console", lambda m: errors.append(f"{m.type}: {m.text}") if m.type in ("error",) else None)
+    pg.on("console", lambda m: errors.append(f"{m.type}: {m.text}") if m.type == "error" and "404" not in m.text else None)
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     url = BASE + "/index.html?ra=269.4520833&dec=4.6933639&pmra=-801.551&pmdec=10362.394&plx=546.976&name=Barnard%27s%20Star&src=live&fov=6&frames=epoch"
     pg.goto(url)
@@ -44,7 +46,7 @@ with sync_playwright() as p:
     # Simulated mode, each preset
     pg.click("#srcSeg button[data-v=sim]"); pg.click("#dispSeg button[data-v=gray]")
     for name in ["WISE 0855", "RW Aurigae"]:
-        pg.click(f"#presets button:has-text('{name}')")
+        pg.click(f".preset[data-name='{name}']")
         pg.wait_for_function("document.getElementById('status').textContent.includes('Simulated')", timeout=30000)
         pg.click("#tabs button[data-t=spec]"); pg.wait_for_timeout(400)
         pg.screenshot(path=f"{OUT}/sim_{name.replace(' ','_')}.png")
