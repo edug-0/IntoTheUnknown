@@ -280,11 +280,25 @@ def main():
     ap.add_argument("--per", type=int, default=3, help="exposures per detector per season (default 3)")
     ap.add_argument("--fov", type=float, default=8, help="cutout field of view in arcmin (default 8)")
     ap.add_argument("--missing", action="store_true", help="only fetch targets that have no data yet (resume after archive outages)")
+    ap.add_argument("--reindex", action="store_true", help="rebuild demo/index.json from the manifests on disk, without downloading")
     a = ap.parse_args()
     only = set(a.only.split(",")) if a.only else None
     os.makedirs(ROOT, exist_ok=True)
     idx_path = os.path.join(ROOT, "index.json")
     index = json.load(open(idx_path)) if os.path.exists(idx_path) else {"targets": {}}
+
+    def save_index():  # written after every target, so the app can use finished targets while others download
+        index["generated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        with open(idx_path, "w") as f:
+            json.dump(index, f, indent=1)
+
+    if a.reindex:
+        for t in TARGETS:
+            mp = os.path.join(ROOT, t["slug"], "manifest.json")
+            if os.path.exists(mp):
+                m = json.load(open(mp))
+                index["targets"][t["slug"]] = dict(name=t["name"], files=len(m["files"]), generated=m["generated"], releases=m["releases"], fov_arcmin=m["fov_arcmin"])
+        save_index(); log(f"Reindexed: {sorted(index['targets'])}"); return
     for t in TARGETS:
         if only and t["slug"] not in only:
             continue
@@ -293,11 +307,10 @@ def main():
         try:
             m = build(t, a.per, a.fov)
             index["targets"][t["slug"]] = dict(name=t["name"], files=len(m["files"]), generated=m["generated"], releases=m["releases"], fov_arcmin=a.fov)
+            save_index()
         except Exception as e:
             log(f"   FAILED {t['name']}: {e}")
-    index["generated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    with open(idx_path, "w") as f:
-        json.dump(index, f, indent=1)
+    save_index()
     log(f"\nWrote {idx_path}")
 
 
