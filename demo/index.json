@@ -31,13 +31,13 @@
   },
   "barnard": {
    "name": "Barnard's Star",
-   "files": 140,
-   "generated": "2026-11-14T22:30:35Z",
+   "generated": "2026-11-14T21:27:32.579076+00:00",
    "releases": [
     "dr1",
     "qr3"
    ],
-   "fov_arcmin": 8.0
+   "fov_arcmin": 7.2,
+   "files": 157
   },
   "epsindib": {
    "name": "\u03b5 Indi B",
