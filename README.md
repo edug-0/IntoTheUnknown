@@ -66,7 +66,7 @@ including what to look for in each target.
 | Spectra on the fly | Aperture photometry in every exposure at each pixel's true wavelength, read from the file's `WCS-WAVE` table. Click anywhere to measure there. |
 | Add or subtract images from different times | One frame per season, visit or exposure, or one deep stack (*All*). Difference against a chosen frame, the mean or the previous frame. |
 | User-chosen field of view | 2′–30′, with the download size shown before fetching |
-| Overlay other telescopes | Gaia DR3 (moved to each frame's date), AllWISE sources, and Aladin Lite with AllWISE, 2MASS, DSS and Pan-STARRS |
+| Overlay other telescopes | Gaia DR3 (moved to each frame's date) and AllWISE sources on the movie. The *Sky context* tab opens Aladin Lite on the **real SPHEREx DR1 all-sky map** from IRSA, with a slider across all 102 bands, plus AllWISE, 2MASS, DSS and Pan-STARRS |
 | Coordinates in the URL | `?ra=133.79513&dec=-7.24515&pmra=-8123.7&pmdec=673.2&plx=439&epoch=2010.33&fov=4`. Add `&embed=1` for a bare player to put in an iframe. Also `src=demo\|live\|sim`, `frames=epoch\|visit\|each\|all`, `disp=gray\|rgb\|diff`, `det=56`. |
 | Metadata and contamination flags | The Exposures tab lists date, detector, wavelength, release, masked fraction and FLAGS status, with file links |
 | Use public tools (Astropy, Aladin) | Aladin Lite for sky context. Astropy builds the demo pack and the test archive. |
@@ -178,6 +178,9 @@ python3 tests/run_test.py /tmp/shots                                     # live 
 - `tools/fetch_demo.py`: builds or refreshes the bundled demo pack.
 - `demo/`: real SPHEREx cutouts and catalogues for the five targets.
 - `tests/`: simulated known-answer test, mock IRSA server and live-path test.
+
+Aladin Lite is loaded from jsDelivr (`aladin-lite@3.8.2`), because CDS's old `.../v3/latest/aladin.js` URL now returns 404.
+AllWISE and 2MASS sky tiles come from IRSA's mirrors, which stay up when CDS's tile server doesn't.
 
 Data: NASA/IPAC Infrared Science Archive (SPHEREx), ESA Gaia DR3 and AllWISE via CDS VizieR, and CDS Sesame and
 Aladin Lite.
