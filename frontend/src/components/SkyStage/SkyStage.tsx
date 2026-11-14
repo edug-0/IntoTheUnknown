@@ -34,11 +34,12 @@ interface SkyStageProps {
   onSelect: (xy: [number, number] | null) => void;
   onRetry: () => void;
   onPreset: (p: Preset) => void;
+  onTour: () => void;
 }
 
 export function SkyStage(props: SkyStageProps) {
   const { load } = props;
-  if (load.kind === "idle") return <Home onPreset={props.onPreset} />;
+  if (load.kind === "idle") return <Home onPreset={props.onPreset} onTour={props.onTour} />;
   return (
     <section className={s.stage} aria-label="Sky view">
       {load.kind === "loading" && (
@@ -54,7 +55,7 @@ export function SkyStage(props: SkyStageProps) {
 }
 
 /** First visit: the whole sky with the five targets where they really are. */
-function Home({ onPreset }: { onPreset: (p: Preset) => void }) {
+function Home({ onPreset, onTour }: { onPreset: (p: Preset) => void; onTour: () => void }) {
   return (
     <section className={s.home} aria-labelledby="home-title">
       <div className={s.homeText}>
@@ -63,6 +64,9 @@ function Home({ onPreset }: { onPreset: (p: Preset) => void }) {
           Pick a target to begin
         </h2>
         <p className={s.homeSub}>Choose one of five test objects on the map, or search by name or RA, Dec. Then press Play and watch for the dot that moves.</p>
+        <GlassButton icon="tour" onClick={onTour}>
+          New here? Take the one-minute tour
+        </GlassButton>
       </div>
       <div className={s.homeMap}>
         <AllSkyMap targets={PRESETS} activeId={null} onPick={onPreset} />

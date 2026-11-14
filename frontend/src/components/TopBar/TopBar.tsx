@@ -12,8 +12,8 @@ interface TopBarProps {
   onCoords: (ra: number, dec: number) => void;
   onShare: () => void;
   shareDisabled: boolean;
-  onShortcuts: () => void;
-  shortcutsOpen: boolean;
+  onGuide: () => void;
+  onTour: () => void;
 }
 
 export function TopBar(props: TopBarProps) {
@@ -28,15 +28,11 @@ export function TopBar(props: TopBarProps) {
         <span className={s.divider} aria-hidden="true" />
         <TargetChips active={props.activeTarget} onPick={props.onPreset} />
       </GlassPanel>
-      <GlassPanel pill className={s.end}>
-        <GlassButton
-          variant="ghost"
-          icon="help"
-          label="Keyboard shortcuts"
-          aria-expanded={props.shortcutsOpen}
-          aria-controls="shortcuts"
-          onClick={props.onShortcuts}
-        />
+      <GlassPanel pill className={s.end} data-tour="help">
+        <GlassButton variant="ghost" icon="tour" onClick={props.onTour} title="A one-minute tour of the screen">
+          <span className={s.shareLabel}>Tour</span>
+        </GlassButton>
+        <GlassButton variant="ghost" icon="help" label="Guide and keyboard shortcuts (?)" onClick={props.onGuide} />
         <GlassButton
           variant="ghost"
           icon="share"
@@ -118,7 +114,7 @@ function TargetSearch({ onPreset, onCoords }: Pick<TopBarProps, "onPreset" | "on
 
 function TargetChips({ active, onPick }: { active: string | null; onPick: (p: Preset) => void }) {
   return (
-    <div className={s.chips} role="group" aria-label="Test targets">
+    <div className={s.chips} role="group" aria-label="Test targets" data-tour="targets">
       {PRESETS.map((p) => (
         <Chip key={p.id} pressed={active === p.id} onClick={() => onPick(p)} title={p.name} className={s.chip}>
           {p.short}

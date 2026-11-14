@@ -3,8 +3,10 @@ import { getLightCurve, getSpectrum } from "./api";
 import { AppShell } from "./components/AppShell/AppShell";
 import { CustomizePanel, type CustomizeValues } from "./components/Customize/CustomizePanel";
 import { Drawer } from "./components/Drawer/Drawer";
+import { Guide } from "./components/Guide/Guide";
+import { Tour } from "./components/Tour/Tour";
+import type { TourStep } from "./components/Tour/steps";
 import { PlaybackBar } from "./components/PlaybackBar/PlaybackBar";
-import { Shortcuts } from "./components/Shortcuts/Shortcuts";
 import { SkyBackdrop } from "./components/SkyBackdrop/SkyBackdrop";
 import { SkyStage } from "./components/SkyStage/SkyStage";
 import { StepGuide } from "./components/StepGuide/StepGuide";
@@ -19,7 +21,7 @@ import { usePlayback } from "./hooks/usePlayback";
 import { useView } from "./hooks/useView";
 import { DATA_CREDIT } from "./lib/brand";
 import { readFlag, writeFlag } from "./lib/storage";
-import { findPreset, type Preset } from "./lib/targets";
+import { findPreset, PRESETS, type Preset } from "./lib/targets";
 import { DEFAULTS, parseUrl, toSearch, type Panel, type ViewMode, type ViewState } from "./lib/url";
 
 const GUIDE_KEY = "spherex-blink.guide-dismissed";
@@ -47,7 +49,8 @@ export default function App({ source }: { source: ViewSource }) {
   const [guideHidden, setGuideHidden] = useState(() => readFlag(GUIDE_KEY));
   const [customizeHidden, setCustomizeHidden] = useState(() => readFlag(CUSTOMIZE_KEY));
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [tourOn, setTourOn] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const mobile = useMediaQuery("(max-width: 768px)");
@@ -100,7 +103,7 @@ export default function App({ source }: { source: ViewSource }) {
   const preset = findPreset(url.target);
   const drawerOpen = url.panel !== null;
   const customizeOpen = mobile ? sheetOpen : !customizeHidden;
-  const idle = useIdle(pb.playing && !drawerOpen && !shortcutsOpen && !reducedMotion && !(mobile && sheetOpen));
+  const idle = useIdle(pb.playing && !drawerOpen && !guideOpen && !tourOn && !reducedMotion && !(mobile && sheetOpen));
 
   const pickPreset = (p: Preset) => update({ ra: p.ra, dec: p.dec, fov: p.fov, band: p.band, target: p.id, epoch: 0, sel: null, ref: 0 });
   const pickCoords = (ra: number, dec: number) => update({ ra, dec, target: null, epoch: 0, sel: null, ref: 0 });
@@ -122,6 +125,19 @@ export default function App({ source }: { source: ViewSource }) {
   const toggleOverlay = (k: keyof ViewState["overlays"]) => update({ overlays: { ...url.overlays, [k]: !url.overlays[k] } });
   const select = (xy: [number, number] | null) =>
     update({ sel: xy, panel: url.panel === "colours" || url.panel === "brightness" ? url.panel : "colours" });
+  const startTour = () => {
+    pb.pause();
+    setGuideOpen(false);
+    setTourOn(true);
+  };
+  // Make the app show what a tour step points at.
+  const prepareTour = (needs: TourStep["needs"]) => {
+    pb.pause();
+    if ((needs === "view" || needs === "drawer") && url.ra === null) pickPreset(PRESETS[0]);
+    if (needs === "drawer" && !url.panel) update({ panel: "colours" });
+    if (needs !== "drawer" && url.panel && mobile) update({ panel: null });
+    if (needs === "customize" && !mobile) setCustomizeOpen(true);
+  };
   const fullscreen = () => {
     try {
       if (document.fullscreenElement) void document.exitFullscreen();
@@ -176,13 +192,13 @@ export default function App({ source }: { source: ViewSource }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
       const k = e.key;
+      if (tourOn || guideOpen) return; // they handle their own keys
       if (k === "Escape") {
-        if (shortcutsOpen) setShortcutsOpen(false);
-        else if (drawerOpen) openPanel(null);
+        if (drawerOpen) openPanel(null);
         else if (mobile && sheetOpen) setSheetOpen(false);
         return;
       }
-      if (k === "?") return setShortcutsOpen((o) => !o);
+      if (k === "?") return setGuideOpen(true);
       if ((k === " " || k === "ArrowLeft" || k === "ArrowRight") && ownsKeys(e.target)) return;
       if (k === " ") {
         e.preventDefault();
@@ -242,8 +258,8 @@ export default function App({ source }: { source: ViewSource }) {
             onCoords={pickCoords}
             onShare={share}
             shareDisabled={!query}
-            onShortcuts={() => setShortcutsOpen((o) => !o)}
-            shortcutsOpen={shortcutsOpen}
+            onGuide={() => setGuideOpen(true)}
+            onTour={startTour}
           />
           {showGuide && (
             <StepGuide
@@ -276,6 +292,7 @@ export default function App({ source }: { source: ViewSource }) {
           onSelect={select}
           onRetry={() => setAttempt((a) => a + 1)}
           onPreset={pickPreset}
+          onTour={startTour}
         />
       }
       bottom={
@@ -343,7 +360,8 @@ export default function App({ source }: { source: ViewSource }) {
               onSelectEpoch={pb.seek}
             />
           )}
-          {shortcutsOpen && <Shortcuts />}
+          {guideOpen && <Guide onClose={() => setGuideOpen(false)} onTour={startTour} />}
+          {tourOn && <Tour prepare={prepareTour} onClose={() => setTourOn(false)} />}
           <Toast message={toast} />
         </>
       }

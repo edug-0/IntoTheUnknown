@@ -76,6 +76,7 @@ export function PlaybackBar(p: PlaybackBarProps) {
             aria-expanded={p.customizeOpen}
             aria-controls="customize"
             onClick={p.onCustomize}
+            data-tour="customize-btn"
           />
         </div>
 
