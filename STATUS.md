@@ -4,7 +4,7 @@ States: `idle`, `planning`, `building`, `in review`, `blocked`, `away`.
 
 | Member | Issue | Branch | State | Next | Blocked | Updated |
 |---|---|---|---|---|---|---|
-| ompatel | #27 | PR #74; fix/27-current-validation | in review | 43 tests and painted-pixel browser QA pass; await CI, merge, then #13 queue cap. |  | 2026-11-15 00:48 |
+| ompatel | #13; #27 closed | fix/13-bounded-view-jobs; PR #74 merged | building | Bound running/queued builds and verify 429, de-duplication, cache hits and slot cleanup. |  | 2026-11-15 00:51 |
 | dflow11 | 28 | main | building | Record the 30 s video, test links in incognito and on a phone, fill the form and submit |  | 2026-11-14 23:42 |
 | UnusualGelo | 29 | feat/29-gaia-overlay-data | in review | Merge #29; then #30 can switch the overlay on |  | 2026-11-14 19:54 |
 | TODO(team) member 4 | | | idle | | | |
