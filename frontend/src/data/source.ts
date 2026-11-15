@@ -21,6 +21,7 @@ export interface LoadProgress {
 
 export interface ViewQuery extends ViewRequest {
   presetId: string | null;
+  manifestUrl?: string;
 }
 
 /** Where views come from. Production uses apiSource; the dev page swaps in a fixture. */
@@ -54,14 +55,15 @@ function wait(ms: number, signal: AbortSignal) {
 }
 
 async function loadArrays(m: Manifest, base: string, signal: AbortSignal) {
+  const assetUrl = (path: string) => /^(https?:|\/)/.test(path) ? path : base + path;
   throwIfAborted(signal);
   const arrays = await Promise.all(m.epochs.map(async (e) => {
-    const imagePromise = fetchAsset(base + e.image, signal).then(async (response) => {
+    const imagePromise = fetchAsset(assetUrl(e.image), signal).then(async (response) => {
       const buffer = await response.arrayBuffer();
       throwIfAborted(signal);
       return new Float32Array(buffer);
     });
-    const maskPromise = !e.mask ? Promise.resolve(null) : fetchAsset(base + e.mask, signal)
+    const maskPromise = !e.mask ? Promise.resolve(null) : fetchAsset(assetUrl(e.mask), signal)
       .then(async (response) => {
         const buffer = await response.arrayBuffer();
         throwIfAborted(signal);
@@ -82,6 +84,10 @@ async function loadArrays(m: Manifest, base: string, signal: AbortSignal) {
 
 const dirOf = (url: string) => url.slice(0, url.lastIndexOf("/") + 1);
 
+function viewRequest(q: ViewQuery): ViewRequest {
+  return { ra: q.ra, dec: q.dec, fov_arcmin: q.fov_arcmin, band: q.band, mode: q.mode, source: q.source };
+}
+
 /** docs/PLAN.md 4.4: presets in their default view load from /golden first, which needs no backend. */
 async function tryGolden(q: ViewQuery, signal: AbortSignal): Promise<LoadedView | null> {
   throwIfAborted(signal);
@@ -99,22 +105,25 @@ async function tryGolden(q: ViewQuery, signal: AbortSignal): Promise<LoadedView 
   if (!res.ok || !(res.headers.get("content-type") ?? "").includes("json")) return null;
   const manifest = (await res.json()) as Manifest;
   const arrays = await loadArrays(manifest, base, signal);
-  const { presetId: _presetId, ...request } = q;
-  void _presetId;
-  registerGoldenView(manifest.render_key, request);
+  registerGoldenView(manifest.render_key, viewRequest(q));
   return { viewId: manifest.render_key, manifest, ...arrays, fromCache: true };
 }
 
 export const apiSource: ViewSource = {
   async load(q, onProgress, signal) {
     throwIfAborted(signal);
+    if (q.manifestUrl) {
+      onProgress({ stage: "fetch" });
+      const manifest = (await (await fetchAsset(q.manifestUrl, signal)).json()) as Manifest;
+      const arrays = await loadArrays(manifest, dirOf(q.manifestUrl), signal);
+      registerGoldenView(manifest.render_key, viewRequest(q));
+      return { viewId: manifest.render_key, manifest, ...arrays, fromCache: true };
+    }
     const golden = await tryGolden(q, signal);
     if (golden) return golden;
 
     onProgress({ stage: "queued" });
-    const { presetId: _presetId, ...body } = q;
-    void _presetId;
-    const created = await createView(body, signal);
+    const created = await createView(viewRequest(q), signal);
     let manifestUrl = created.manifest_url;
     const fromCache = created.status === "ready";
     let pollDelay = FIRST_POLL_MS;
