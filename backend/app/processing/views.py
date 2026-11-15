@@ -17,7 +17,7 @@ from .. import config
 from ..cache import local
 from ..irsa import fetch
 from ..models import ViewRequest
-from . import photometry, stack
+from . import align, photometry, stack
 
 log = logging.getLogger("views")
 
@@ -89,7 +89,7 @@ def _demo_pack(req: ViewRequest) -> tuple[Path, dict] | None:
     return None
 
 
-def demo_frames(req: ViewRequest, job: Job) -> tuple[list[dict], dict] | None:
+def demo_frames(req: ViewRequest, job: Job) -> tuple[list[dict], dict, list[dict]] | None:
     hit = _demo_pack(req)
     if not hit:
         return None
@@ -110,7 +110,7 @@ def demo_frames(req: ViewRequest, job: Job) -> tuple[list[dict], dict] | None:
         "files": len(m.get("files", [])),
         "archive_exposures": m.get("archive_exposures"),
     }
-    return out, origin
+    return out, origin, align.load_gaia_csv(folder / "gaia.csv")
 
 
 def live_frames(req: ViewRequest, job: Job) -> list[dict]:
@@ -196,10 +196,11 @@ def build(job: Job) -> None:
             "Switch the data source to Live archive or Auto.",
         )
     if saved is not None:
-        frames, origin = saved
+        frames, origin, gaia = saved
         source, min_frames = "golden", config.MIN_EPOCH_FRAMES_DEMO
     else:
         frames = live_frames(req, job)
+        gaia = []  # live Gaia query lands with #8; until then live views report astrom_resid_px: null
         source, min_frames = "irsa", config.MIN_EPOCH_FRAMES_LIVE
         origin = {
             "kind": "live",
@@ -230,8 +231,9 @@ def build(job: Job) -> None:
 
     stacks: list[np.ndarray] = []
     info: dict = {"channels": [], "bandpass_matched": False}
+    astrom: list[dict | None] = []
     if epochs:
-        stacks, info = stack.stack_epochs(epochs, w, shape)
+        stacks, info, astrom = align.align_epochs(epochs, w, shape, gaia)
     stretch = (
         stack.shared_asinh(stacks)
         if stacks and any(np.isfinite(s).any() for s in stacks)
@@ -260,7 +262,9 @@ def build(job: Job) -> None:
                 "lambda_um": [round(min(lams), 3), round(max(lams), 3)],
                 "channels": len(info["channels"]),
                 "flagged_px": _flag_counts(ep),
-                "astrom_resid_px": None,
+                "astrom_resid_px": round(astrom[i]["resid_px"], 4) if astrom[i] else None,
+                "astrom_offset_px": [round(astrom[i]["dx"], 4), round(astrom[i]["dy"], 4)] if astrom[i] else None,
+                "astrom_stars": astrom[i]["n_stars"] if astrom[i] else 0,
                 "phot_scale": round(scales[i], 4),
                 "image": f"e{i}.f32",
                 "mask": f"e{i}.mask.u8",
