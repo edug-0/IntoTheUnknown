@@ -15,7 +15,9 @@ Resource group: `rg-planetx`. Account: `stplanetxitu7q4`, StorageV2, Standard_LR
 
 Use `BlobServiceClient(account_url, credential=DefaultAzureCredential())`. Locally, sign in with Azure CLI using an identity that has **Storage Blob Data Contributor** scoped to this storage account. In Container Apps, use the app's managed identity with the same scoped role. No account key, SAS or connection string is required; shared-key authorization is disabled on this account.
 
-The signed-in provisioning user has that role and passed the live write tests. Himanshu's own role assignment is pending his Azure sign-in identity or Entra object ID; a GitHub username does not establish an Azure identity. Public reads are already available. Reader access to the storage resource is also needed if he wants to browse it in the Azure portal.
+The signed-in provisioning user has that role and passed the live write tests. Himanshu's confirmed UIC identity has account-scoped **Storage Blob Data Contributor** and **Reader**. His initially supplied personal email had no tenant match; no guest invitation was made. Public reads are available without sign-in.
+
+The deployed app uses the dedicated user-assigned identity `id-planetx-api`. It has Blob Data Contributor on this account and AcrPull on the project registry only. The app's `AZURE_CLIENT_ID` selects that identity. A live test inside the deployed container acquired a managed-identity token and successfully wrote, read and deleted a temporary private-state blob; no token was printed or stored.
 
 | Container | Access | Intended contents |
 |---|---|---|
