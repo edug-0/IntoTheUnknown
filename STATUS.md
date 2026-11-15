@@ -4,7 +4,7 @@ States: `idle`, `planning`, `building`, `in review`, `blocked`, `away`.
 
 | Member | Issue | Branch | State | Next | Blocked | Updated |
 |---|---|---|---|---|---|---|
-| ompatel | 21 | fix/21-view-states | building | Integrate Gaia/chart main changes, review and merge PR77 |  | 2026-11-15 04:04 |
+| ompatel | 7 | feat/7-watcher-activation | building | Publish catalog, configure refresh secret and deploy scheduled watcher |  | 2026-11-15 04:08 |
 | dflow11 | 28 | main | building | Record the 30 s video, test links in incognito and on a phone, open the form, add the SIMBAD credit (#3), submit by 23:59. |  | 2026-11-15 03:31 |
 | UnusualGelo | 29 | feat/29-gaia-overlay-data | in review | Merge #29; then #30 can switch the overlay on |  | 2026-11-14 19:54 |
 | TODO(team) member 4 | | | idle | | | |
