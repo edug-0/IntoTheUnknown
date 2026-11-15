@@ -1,10 +1,14 @@
 """Gaia overlay (issue #29): pixel tracks per epoch, per-epoch matches and the match label. Offline."""
 
+import time
+
 import numpy as np
 from astropy.coordinates import SkyCoord
+from fastapi.testclient import TestClient
 
 from app import config
-from app.processing import gaia, stack
+from app.main import app
+from app.processing import align, gaia, stack
 
 CENTER = (269.44627, 4.7682)  # Barnard's Star preset centre (docs/TARGETS.md)
 EPOCHS_MJD = [60920.0, 61110.0, 61280.0]  # three SPHEREx passes, Sep 2025 to Sep 2026
@@ -103,11 +107,54 @@ def test_off_grid_stars_are_left_out_and_brightest_kept_first():
     assert 7 not in ids and ids[0] == B.source_id  # sorted by G, Barnard's (8.2) first
 
 
-def test_demo_csv_catalogue_reads_without_source_ids(tmp_path):
-    cat = gaia.catalog_from_csv(config.DEMO_DIR / "barnard" / "gaia.csv")
+def test_demo_catalogue_rows_have_no_source_ids():
+    cat = gaia.catalog_from_rows(align.load_gaia_csv(config.DEMO_DIR / "barnard" / "gaia.csv"))
     assert len(cat) > 100 and np.isnan(cat["radial_velocity"]).all()
     assert (cat["source_id"] == gaia.UNKNOWN_SOURCE_ID).all()
     w, shape = grid()
     result = gaia.overlay(cat, EPOCHS_MJD, [np.zeros(shape)] * 3, w)
     assert result["stars"] and all(s["source_id"] is None for s in result["stars"])
-    assert len(gaia.catalog_from_csv(tmp_path / "missing.csv")) == 0
+    assert len(gaia.catalog_from_rows([])) == 0
+
+
+def test_gaia_down_means_no_catalogue_not_an_error(monkeypatch):
+    def down(*a, **k):
+        raise gaia.GaiaUnavailable("ESA: timeout; ARI: timeout")
+
+    monkeypatch.setattr(gaia, "query_gaia_cone", down)
+    assert gaia.live_catalog(*CENTER, 6) is None
+
+
+def wait_ready(client, view_id, timeout=90):
+    deadline = time.time() + timeout
+    while (body := client.get(f"/api/views/{view_id}").json())["status"] not in ("ready", "error"):
+        assert time.time() < deadline, "view did not finish"
+        time.sleep(0.2)
+    assert body["status"] == "ready", body
+    return body
+
+
+def test_gaia_endpoint_on_the_barnard_demo_view():
+    client = TestClient(app)
+    r = client.post("/api/views", json={"ra": CENTER[0], "dec": CENTER[1], "fov_arcmin": 6, "band": "B1-B2"})
+    view_id = r.json()["view_id"]
+    body = wait_ready(client, view_id)
+    m = client.get(body["manifest_url"]).json()
+    assert m["extras"]["gaia"] == "gaia.json"
+    assert client.get(body["manifest_url"].replace("manifest.json", "gaia.json")).status_code == 200
+
+    g = client.get(f"/api/views/{view_id}/gaia").json()
+    n_epochs = len(m["epochs"])
+    assert g["epochs_mjd"] == [e["t_mean_mjd"] for e in m["epochs"]] and g["selection"] is None
+    assert g["stars"] and all(len(s["track_px"]) == len(s["matched"]) == n_epochs for s in g["stars"])
+    assert sum(any(s["matched"]) for s in g["stars"]) >= 5  # real field stars are found where Gaia says
+    # Barnard's Star itself (G 8.2, brightest in the field) moves north between the passes.
+    star = min(g["stars"], key=lambda s: s["g"] if s["g"] is not None else 99)
+    assert star["track_px"][-1][1] - star["track_px"][0][1] > 1.0
+
+    nx = m["grid"]["nx"]
+    sel = client.get(f"/api/views/{view_id}/gaia", params={"x": nx // 2, "y": nx // 2, "epoch": 0}).json()
+    assert sel["selection"]["label"] in ("match", "no_match", "unmeasured")
+    bad = client.get(f"/api/views/{view_id}/gaia", params={"x": 1, "y": 1, "epoch": 99})
+    assert bad.status_code == 503 and bad.json()["error"]["code"] == "BAD_EPOCH"
+    assert client.get("/api/views/nope/gaia").status_code == 404

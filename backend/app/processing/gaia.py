@@ -380,40 +380,25 @@ MAX_OVERLAY_STARS = 600  # brightest first; a 15' field near the plane can hold 
 UNKNOWN_SOURCE_ID = -1  # demo-pack catalogues (VizieR) carry no source_id
 
 
-def catalog_from_csv(path) -> np.ndarray:
-    """A demo-pack gaia.csv (tools/fetch_demo.py, VizieR I/355 at J2016.0) as GAIA_DTYPE rows.
+def catalog_from_rows(rows: list[dict]) -> np.ndarray:
+    """Demo-pack catalogue rows (align.load_gaia_csv: VizieR I/355 at J2016.0) as GAIA_DTYPE.
 
-    Missing or unreadable file gives an empty catalogue. VizieR's export has no source_id
-    or radial velocity: source_id is UNKNOWN_SOURCE_ID and rv is NaN (proper motion and
-    parallax still apply).
+    VizieR's export has no source_id or radial velocity: source_id is UNKNOWN_SOURCE_ID and
+    rv is NaN (proper motion and parallax still apply). Rows without a position are dropped.
     """
-    import csv
-
-    try:
-        with open(path, newline="") as fh:
-            rows = list(csv.DictReader(fh))
-    except OSError:
-        return np.empty(0, GAIA_DTYPE)
-
-    def num(r, k):
-        try:
-            return float(r.get(k, ""))
-        except ValueError:
-            return np.nan
-
     cat = np.empty(len(rows), GAIA_DTYPE)
     for i, r in enumerate(rows):
-        cat[i] = (
-            int(r["source_id"]) if r.get("source_id") else UNKNOWN_SOURCE_ID,
-            num(r, "ra_icrs"),
-            num(r, "de_icrs"),
-            num(r, "pmra"),
-            num(r, "pmde"),
-            num(r, "plx"),
-            np.nan,
-            num(r, "gmag"),
-        )
+        cat[i] = (UNKNOWN_SOURCE_ID, r["ra"], r["dec"], r["pmra"], r["pmdec"], r["plx"], np.nan, r["gmag"])
     return cat[np.isfinite(cat["ra"]) & np.isfinite(cat["dec"])]
+
+
+def live_catalog(ra: float, dec: float, fov_arcmin: float) -> np.ndarray | None:
+    """Gaia DR3 around a live view, or None when every endpoint fails (the overlay is then left out)."""
+    try:
+        return query_gaia_cone(ra, dec, cone_radius_deg(fov_arcmin))
+    except (GaiaUnavailable, ValueError) as e:
+        log.warning("Gaia overlay skipped: %s", e)
+        return None
 
 
 def _robust_sigma(img: np.ndarray) -> float:
