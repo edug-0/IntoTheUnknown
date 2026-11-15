@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "render_key": "ee6778fc1b16c4872fcdc2bd",
+  "render_key": "1c8cfa1f3c52cdb0ff76687f",
   "source": "golden",
-  "pipeline_version": 2,
-  "created_at": "2026-11-14T22:59:17+00:00",
+  "pipeline_version": 3,
+  "created_at": "2026-11-14T23:40:00+00:00",
   "query": {
     "ra": 133.7599,
     "dec": -7.2422,
@@ -69,7 +69,12 @@
         "COLD": 5,
         "PERSIST": 1
       },
-      "astrom_resid_px": null,
+      "astrom_resid_px": 0.0555,
+      "astrom_offset_px": [
+        -0.0063,
+        0.0761
+      ],
+      "astrom_stars": 4,
       "phot_scale": 1.0,
       "image": "e0.f32",
       "mask": "e0.mask.u8",
@@ -98,7 +103,12 @@
         "PERSIST": 7,
         "COLD": 5
       },
-      "astrom_resid_px": null,
+      "astrom_resid_px": 0.0471,
+      "astrom_offset_px": [
+        -0.0713,
+        0.0186
+      ],
+      "astrom_stars": 4,
       "phot_scale": 1.0,
       "image": "e1.f32",
       "mask": "e1.mask.u8",
@@ -128,6 +138,8 @@
         "PERSIST": 4
       },
       "astrom_resid_px": null,
+      "astrom_offset_px": null,
+      "astrom_stars": 0,
       "phot_scale": 1.0,
       "image": "e2.f32",
       "mask": "e2.mask.u8",

@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "render_key": "052c4fae9995eb3d2506afa6",
+  "render_key": "df23c29c8b690a5df9da6721",
   "source": "golden",
-  "pipeline_version": 2,
-  "created_at": "2026-11-14T22:59:13+00:00",
+  "pipeline_version": 3,
+  "created_at": "2026-11-14T23:39:55+00:00",
   "query": {
     "ra": 269.44627,
     "dec": 4.7682,
@@ -72,7 +72,12 @@
         "OUTLIER": 2,
         "COLD": 2
       },
-      "astrom_resid_px": null,
+      "astrom_resid_px": 0.0211,
+      "astrom_offset_px": [
+        0.0208,
+        0.0078
+      ],
+      "astrom_stars": 10,
       "phot_scale": 1.0,
       "image": "e0.f32",
       "mask": "e0.mask.u8",
@@ -103,7 +108,12 @@
         "OUTLIER": 2,
         "COLD": 1
       },
-      "astrom_resid_px": null,
+      "astrom_resid_px": 0.0216,
+      "astrom_offset_px": [
+        -0.0204,
+        0.0037
+      ],
+      "astrom_stars": 10,
       "phot_scale": 1.004,
       "image": "e1.f32",
       "mask": "e1.mask.u8",
@@ -135,7 +145,12 @@
         "COLD": 1,
         "OUTLIER": 1
       },
-      "astrom_resid_px": null,
+      "astrom_resid_px": 0.0298,
+      "astrom_offset_px": [
+        0.0023,
+        0.0038
+      ],
+      "astrom_stars": 11,
       "phot_scale": 1.0144,
       "image": "e2.f32",
       "mask": "e2.mask.u8",

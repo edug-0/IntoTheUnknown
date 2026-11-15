@@ -44,6 +44,7 @@ CAE="cae-planetx"                 # Container Apps environment
 SWA="swa-planetx"                 # Static Web App (Free): only if SWA_LOC is a region
 WEB_INDEX="index.html"            # Blob static website ($web container) index and 404 page
 API="ca-planetx-api"              # Container App: created in #23, not here
+APP_IDENTITY="id-planetx-api"     # Dedicated user-assigned identity for runtime and registry pulls
 FUNC="func-planetx-${SUF}"        # Function app (Flex): created in #24, not here
 COSMOS="cosmos-planetx-${SUF}"    # Cosmos DB (free tier): T3 only, not here
 BUDGET_NAME="budget-planetx"
@@ -61,6 +62,7 @@ REQUIRED_PROVIDERS=(
   Microsoft.Web
   Microsoft.Storage
   Microsoft.ContainerRegistry
+  Microsoft.ManagedIdentity
   Microsoft.DocumentDB
 )
 
