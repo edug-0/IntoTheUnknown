@@ -156,3 +156,12 @@ Owner: ompatel181005 (Codex)
 Decision: The human identified coordinate/FOV/band changes as the slow path and explicitly requested one warm instance during testing. Live scale is min=1/max=1. Saved-data measurements were 5.569/0.710 s for first/repeat 4 arcmin B1-B2, 3.406/0.396 s for B1 at 6 arcmin, and under one second to reject an unsupported Saved FOV. Auto mode can still fetch outside the five saved fields; no new astronomy downloads were made for profiling. Recorded timings are in infra/saved-view-timings.json. Cache and job lifecycle code remain with their owners.
 Decision: Extend the already approved build workflow for pushes to main: checks, offline snapshot refresh, OIDC login, Docker build/push, exact-digest deployment, health/preset checks and restoration of the previous image on verification failure. Use separate CI identity id-planetx-github, with main-only GitHub federation and project-resource roles. Configure Azure IDs in GitHub secrets and APP_MIN_REPLICAS=1. No long-lived password or bootstrap registry token is needed. Setup completed; first federated workflow run awaits merging/testing this workflow update.
 Owner: ompatel181005 (Codex)
+## 2026-11-14 13:31 - Gaia fallback is ARI Heidelberg TAP, not MAST
+Decision: `query_gaia_cone` tries the ESA Gaia TAP, then ARI Heidelberg's TAP with the same ADQL. MAST is not used. POINT and CIRCLE carry `'ICRS'`, and results that hit MAXREC are refused.
+Why: astroquery's `Catalogs.query_region(catalog="Gaia", version=3)` warns and silently returns Gaia DR2 (epoch 2015.5). ARI returned the same 1976 rows as ESA with identical values. ARI's ADQL parser rejects POINT/CIRCLE without `'ICRS'`. Both servers truncate CSV silently at MAXREC.
+Owner: ompatel
+
+## 2026-11-14 14:30 - Gaia results via VOTable; WISE 0855 anchored on CatWISE2020
+Decision: `query_gaia_cone` requests VOTable and refuses any result with QUERY_STATUS=OVERFLOW or as many rows as MAXREC. WISE 0855 uses the CatWISE2020 position at MJD 57170 with literature pm and parallax.
+Why: CSV gives no truncation signal and `TOP n` sets no OVERFLOW; both ESA and ARI set OVERFLOW at MAXREC (checked live). The designation-epoch guess for WISE 0855 was unverified; CatWISE documents its epoch, and the literature pm matches the independent AllWISE position (0.4") better than CatWISE's own pm (1.9").
+Owner: ompatel

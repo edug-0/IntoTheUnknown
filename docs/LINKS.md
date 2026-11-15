@@ -31,6 +31,8 @@ Every URL below was checked on 2026-11-14: it either returned HTTP 200 with a ma
 
 ## Other data
 - Gaia ESA archive: https://gea.esac.esa.int/archive/
+- Gaia DR3 TAP, primary (ESA): https://gea.esac.esa.int/tap-server/tap/sync
+- Gaia DR3 TAP, fallback (ARI Heidelberg): https://gaia.ari.uni-heidelberg.de/tap/sync
 - Gaia credits and acknowledgement: https://www.cosmos.esa.int/web/gaia-users/credits
 - Gaia DR3 credit and citation instructions (the acknowledgement text in `DATA.md`): https://gea.esac.esa.int/archive/documentation/GDR3/Miscellaneous/sec_credit_and_citation_instructions/
 - Gaia at MAST (linked from the challenge resources tab): https://archive.stsci.edu/missions-and-data/gaia
