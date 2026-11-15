@@ -48,9 +48,17 @@ The recorded 2026-11-14 preflight allowed westus, northcentralus, norwayeast, be
 
 After deployment, check revision readiness, `/api/health`, all five presets and spectrum/brightness at the public URL. HTTP 200 health does not establish that IRSA is up or science is validated. Save the source SHA and verification results without secrets. Return minimum replicas to zero after judging; cold starts are expected.
 
-## Optional CI and alternative hosts
+## Automatic CI/CD
 
-`05-oidc-test.sh` creates or reuses only its saved, owned app registration, verifies federation for this repository's main branch, and grants registry-scoped AcrPush once ACR exists. It can save the three Azure IDs as GitHub Actions secrets. Permission denial exits 2 with a public-GHCR fallback; network errors exit 1. OIDC and an automatic workflow are unnecessary for the manual build above. A later deploy workflow needs permission scoped to this Container App; avoid resource-group Contributor.
+The `build-image.yml` workflow now runs for every push to `main`, with manual dispatch retained. It checks backend/frontend/functions/capture/infrastructure code, regenerates the five saved snapshots with archive access blocked, logs in through GitHub OIDC, builds and pushes a commit-tagged image, deploys its exact digest, then checks health and all five preset manifests. Verification failure attempts to restore the previous image. Deployments are serialized; a push superseded by newer main is built but not deployed.
+
+One-time setup: `bash infra/06-ci-identity.sh` after core/app provisioning. This creates dedicated identity `id-planetx-github`, validates a federation restricted to this repository's main branch, and stores only Azure IDs in Actions secrets. It grants registry AcrPush/Reader, app-scoped Container Apps Contributor, Managed Identity Operator on the runtime identity, and environment Reader. It has no resource-group Contributor or Blob data role. The runtime identity remains separate. No client password or periodically refreshed ACR token is needed. [Microsoft's managed-identity federation guide](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation-create-trust-user-assigned-managed-identity).
+
+Repository variable `APP_MIN_REPLICAS` is **1 during testing**, explicitly requested by the human; this keeps one instance warm and incurs compute charges. Set it to `0` to return future automatic deployments to scale-to-zero. Maximum replicas remains one while jobs live in process memory. CI login, deployment and rollback still need one live workflow verification after this update merges.
+
+## Alternative hosts and legacy authentication
+
+`05-oidc-test.sh` is the older app-registration alternative. Prefer `06-ci-identity.sh`, which uses an Azure-managed identity and does not require tenant app-registration permission. Do not run both against the same GitHub Azure ID secrets without deliberately choosing which identity should be active.
 
 Set `FRONTEND_HOST=blob` explicitly to enable the storage static website, or `FRONTEND_HOST=swa SWA_LOC=<allowed-region>` if policy permits. These need a separate frontend deployment and API-origin configuration; `30-app.sh` deploys the combined container only. The build context is the repository root, so an old backend-only workflow is unsuitable.
 
@@ -62,11 +70,11 @@ The live budget API accepted `budget-planetx` on 2026-11-14: $20 monthly on `rg-
 
 ## ACR Tasks restriction and approved build fallback
 
-The first live `az acr build` failed with `TasksOperationsNotAllowed`. No app revision was deployed. No local Docker/Podman builder is installed. The human approved `.github/workflows/build-image.yml` as a fallback: manually dispatch it with a full reviewed main SHA; it validates that the commit is on main, builds the root Dockerfile on a GitHub runner and pushes the commit-tagged image to the private registry. Repository permissions are `contents: read`; it has no Azure deployment step.
+The first live `az acr build` failed with `TasksOperationsNotAllowed`. No app revision was deployed by that attempt. No local Docker/Podman builder is installed. The human approved `.github/workflows/build-image.yml` as a manual bootstrap fallback; it successfully built the first image on GitHub. The automatic OIDC workflow above supersedes that bootstrap authentication.
 
-Just before dispatch, an authorized operator obtains a short-lived registry token using `az acr login --expose-token` and passes it **directly through stdin** to `gh secret set ACR_BUILD_TOKEN`. Never print the token, put it in a body/argument/file, or use the ACR admin password. Remove the GitHub secret after the run, including a failed run. Tokens expire after about three hours; this is a manual bootstrap route, not unattended CI authentication. [Microsoft's token login documentation](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication#use-az-acr-login-without-docker-daemon).
+For that first bootstrap only, a short-lived ACR token was passed through stdin to an Actions secret and removed after the successful run. The new OIDC workflow does not depend on `ACR_BUILD_TOKEN`. Never print registry tokens or put them in files or command arguments. [Microsoft's token login documentation](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication#use-az-acr-login-without-docker-daemon).
 
-After a successful workflow, `SOURCE_REF=<same-full-sha> bash infra/30-app.sh --deploy-only` checks the existing image digest and deploys with the declared user-assigned identity, without requesting another ACR build. The workflow must be merged before its manual dispatch is available. OIDC remains a separate automation improvement.
+For a manual infrastructure redeploy, `MIN_REPLICAS=1 SOURCE_REF=<built-full-sha> bash infra/30-app.sh --deploy-only` checks the existing image digest and uses the declared user-assigned identity without requesting another ACR build. Omit `MIN_REPLICAS=1` to use scale-to-zero outside testing; automatic deployments use the repository variable above.
 
 ## Verified public deployment
 
@@ -77,3 +85,9 @@ Image source: `130e42b9138545ec9a856136ad41e5d1aa19df50`. The [GitHub build](htt
 CLI PATCH updates failed with `ExpressSystemAssignedIdentityNotSupported` despite the app referencing the standard Consumption environment. A full ARM create/update with a dedicated user-assigned identity succeeded. Runtime identity access to private Blob state was tested inside the deployed container. `30-app.sh` now uses this reproducible ARM/UserAssigned path. Keep maximum replicas at one until shared job state is implemented.
 
 `check-scripts.sh` checks syntax, subscription/ARM URL scoping and workspace-key avoidance. `tests/run.sh` uses fake Azure/GitHub commands and fixture identities only, checking wrong-subscription/tenant refusal, policy, configuration, OIDC and budget behavior. Exit codes: 0 success, 1 error, 2 OIDC permission denial, 3 budget refusal, 4 unconfirmed policy.
+
+## View-loading observations
+
+Saved-data timings from the public app are recorded in [saved-view-timings.json](saved-view-timings.json): Barnard at 4 arcmin / B1-B2 took 5.569 s on first build and 0.710 s on repeat; B1 at 6 arcmin took 3.406 s then 0.396 s. A 10 arcmin Saved request returned NOT_SAVED in under one second. These observations are not a load test or a cold-start benchmark.
+
+Default preset snapshots avoid backend rebuilding. Other supported coordinates/FOV/bands rebuild saved cutouts and then hit the render cache on repeat. Auto can contact the archive beyond the saved footprint; the downloads cover five fields, not the full sky. Use Saved to prevent live fallback while demonstrating the downloaded data. Persistent cache and job lifecycle improvements remain owned by #12/#13, rather than being duplicated in the deployment slice.

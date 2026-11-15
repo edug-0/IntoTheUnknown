@@ -128,6 +128,11 @@ case "$a" in
   "identity show -g rg-planetx -n id-planetx-api --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-planetx-api" ;;
   "identity show -g rg-planetx -n id-planetx-api --query clientId -o tsv") echo 'cccccccc-1111-2222-3333-dddddddddddd' ;;
   "identity show -g rg-planetx -n id-planetx-api --query principalId -o tsv") echo 'dddddddd-1111-2222-3333-eeeeeeeeeeee' ;;
+  "identity show -g rg-planetx -n id-planetx-github --query principalId -o tsv") echo 'eeeeeeee-1111-2222-3333-ffffffffffff' ;;
+  "identity show -g rg-planetx -n id-planetx-github --query clientId -o tsv") echo 'ffffffff-1111-2222-3333-aaaaaaaaaaaa' ;;
+  "identity federated-credential show "*" --query "*)
+    printf '%s\n%s\n%s\n' 'https://token.actions.githubusercontent.com' "${FAKE_CI_SUBJECT:-repo:ompatel181005/IntoTheUnknown:ref:refs/heads/main}" 'api://AzureADTokenExchange' ;;
+  "containerapp show -g rg-planetx -n ca-planetx-api --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.App/containerApps/ca-planetx-api" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.destination -o tsv") echo "log-analytics" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId -o tsv") echo "${FAKE_CAE_WS:-cust-id}" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.defaultDomain -o tsv") echo "nice-sky-1.westus.azurecontainerapps.io" ;;

@@ -11,7 +11,8 @@
     "registryServer": {"type": "string"},
     "storageAccountUrl": {"type": "string"},
     "framesContainer": {"type": "string", "defaultValue": "frames"},
-    "stateContainer": {"type": "string", "defaultValue": "state"}
+    "stateContainer": {"type": "string", "defaultValue": "state"},
+    "minReplicas": {"type": "int", "defaultValue": 0, "minValue": 0, "maxValue": 1}
   },
   "resources": [{
     "type": "Microsoft.App/containerApps",
@@ -44,7 +45,7 @@
             {"name": "FRAMES_PUBLIC_BASE", "value": "[concat(parameters('storageAccountUrl'), '/', parameters('framesContainer'))]"}
           ]
         }],
-        "scale": {"minReplicas": 0, "maxReplicas": 1}
+        "scale": {"minReplicas": "[parameters('minReplicas')]", "maxReplicas": 1}
       }
     }
   }]

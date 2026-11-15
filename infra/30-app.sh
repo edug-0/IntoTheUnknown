@@ -6,6 +6,8 @@ source "$(dirname "$0")/env.sh"
 cd "$INFRA_DIR/.."
 MODE=${1:---plan}
 [[ $MODE == --plan || $MODE == --apply || $MODE == --deploy-only ]] || die 'Usage: 30-app.sh [--plan|--apply|--deploy-only]'
+MIN_REPLICAS=${MIN_REPLICAS:-0}
+[[ $MIN_REPLICAS == 0 || $MIN_REPLICAS == 1 ]] || die 'MIN_REPLICAS must be 0 or 1.'
 SOURCE_REF=${SOURCE_REF:-origin/main}
 SOURCE_SHA=$(git rev-parse --verify "${SOURCE_REF}^{commit}")
 TAG=${SOURCE_SHA:0:12}
@@ -18,7 +20,7 @@ Build: $BUILD_LINE
 Image: $IMAGE
 Target: $RG / $CAE / $API
 App: one React + FastAPI container, port 8000, 1 vCPU / 2 GiB
-Scale: 0 minimum / 1 maximum (jobs currently live in one process)
+Scale: $MIN_REPLICAS minimum / 1 maximum (jobs currently live in one process)
 Identity: dedicated user-assigned; AcrPull on $ACR, Blob Data Contributor on $SA
 Cache: local ephemeral files; golden snapshots are bundled in the image
 Watcher, Blob-backed render cache and Application Insights SDK wiring remain separate work.
@@ -90,7 +92,7 @@ azs deployment group create -g "$RG" --name core-app \
   --parameters "appName=$API" "location=$LOCATION" "environmentId=$ENV_ID" \
     "identityResourceId=$IDENTITY_ID" "identityClientId=$CLIENT_ID" \
     "image=$IMAGE" "registryServer=$ACR.azurecr.io" "storageAccountUrl=https://$SA.blob.core.windows.net" \
-    "framesContainer=$FRAMES_CONTAINER" "stateContainer=$STATE_CONTAINER" -o none
+    "framesContainer=$FRAMES_CONTAINER" "stateContainer=$STATE_CONTAINER" "minReplicas=$MIN_REPLICAS" -o none
 HOST=$(azsq containerapp show -g "$RG" -n "$API" --query properties.configuration.ingress.fqdn -o tsv)
 [[ -n $HOST ]] || die 'Deployment returned no public hostname.'
 info "Public app: https://$HOST"
