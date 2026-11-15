@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 # Fake gh for offline tests: logs the call, never contacts GitHub.
 printf 'FAKE gh %s\n' "$*" >>"${FAKE_LOG:-/dev/null}.gh"
+case "$*" in
+  "secret set "*)
+    # Consume piped values, while --body invocations do not read stdin.
+    [[ $* == *' --body '* ]] || cat >/dev/null ;;
+esac
 exit 0

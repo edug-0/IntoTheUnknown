@@ -17,12 +17,18 @@ run_case() { # label expected-exit script [ENV=value ...]
   (
     # No ambient test settings or real subscription IDs can enter a case.
     for v in ${!FAKE_@}; do unset "$v"; done
-    unset AZ_SUBSCRIPTION_ID AZ_TENANT_ID AZ_OIDC_APP_ID LOC SWA_LOC SUF FRONTEND_HOST ALLOW_UNVERIFIED_REGION SOURCE_REF APP_MODE
+    unset AZ_SUBSCRIPTION_ID AZ_TENANT_ID AZ_OIDC_APP_ID LOC SWA_LOC SUF FRONTEND_HOST ALLOW_UNVERIFIED_REGION SOURCE_REF APP_MODE APP_MIN_REPLICAS MIN_REPLICAS
     export FAKE_LOG="$CASE_DIR/calls" AZ_ENV_LOCAL="$CASE_DIR/env"
     export FAKE_SUB_ID=11111111-2222-3333-4444-555555555555
     export FAKE_TENANT=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
     printf 'AZ_SUBSCRIPTION_ID=%s\nAZ_TENANT_ID=%s\n' "$FAKE_SUB_ID" "$FAKE_TENANT" >"$AZ_ENV_LOCAL"
     for setting in "$@"; do export "$setting"; done
+    curl() {
+      [[ $* == *https://app.test.invalid/api/health* ]] || { echo 'Unexpected curl URL in offline test' >&2; return 97; }
+      printf '%s\n' "$*" >> "$FAKE_LOG.curl"
+      printf '{"ok":true}\n'
+    }
+    export -f curl
     cd "$REPO"
     local args=()
     [[ $script != 30-app.sh ]] || args+=("${APP_MODE:---plan}")
@@ -103,4 +109,26 @@ lacks '^acr build|^containerapp create' calls
 run_case 'app apply refuses disabled ARM tokens before build' 1 30-app.sh APP_MODE=--apply FAKE_EXISTS=yes FAKE_ARM_AUTH=disabled
 has 'ARM-token authentication must be enabled' output
 lacks '^acr build|^containerapp create' calls
+run_case 'deploy-only refuses a missing image without building or creating an app' 1 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes FAKE_IMAGE=missing
+has 'selected image is absent' output
+lacks '^acr build|^containerapp create' calls
+run_case 'deploy-only refuses malformed registry digest' 1 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes FAKE_DIGEST=invalid
+has 'invalid image digest' output
+lacks '^acr build|^containerapp update' calls
+run_case 'deploy-only updates existing app with managed identity and verifies health' 0 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes
+lacks '^acr build|^containerapp create' calls
+has '^deployment group create .*--name core-app .*identityResourceId=/subscriptions/' calls
+has '^role assignment create .*--role AcrPull --scope /subscriptions/.*/registries/' calls
+has '^role assignment create .*--role Storage Blob Data Contributor --scope /subscriptions/.*/storageAccounts/' calls
+lacks '^containerapp identity assign .*--system-assigned' calls
+has 'https://app.test.invalid/api/health' calls.curl
+run_case 'CI setup refuses incorrect federation before grants or secrets' 1 06-ci-identity.sh FAKE_EXISTS=yes FAKE_CI_SUBJECT=repo:other/project:ref:refs/heads/main
+has 'federation does not match' output
+lacks '^role assignment create' calls
+lacks 'secret set' calls.gh
+run_case 'CI setup grants only scoped roles and uses main-only federation' 0 06-ci-identity.sh FAKE_EXISTS=yes
+has '^role assignment create .*--role Container Apps Contributor --scope /subscriptions/.*/containerApps/' calls
+has '^role assignment create .*--role Managed Identity Operator --scope /subscriptions/.*/userAssignedIdentities/' calls
+lacks '^role assignment create .*--scope /subscriptions/[^/]+$' calls
+has 'variable set APP_MIN_REPLICAS .*--body 1' calls.gh
 printf '\n%s offline scenarios passed; no Azure or GitHub requests made.\n' "$passed"

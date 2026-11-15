@@ -4,8 +4,8 @@ States: `idle`, `planning`, `building`, `in review`, `blocked`, `away`.
 
 | Member | Issue | Branch | State | Next | Blocked | Updated |
 |---|---|---|---|---|---|---|
-| ompatel | #7 #8 #23 #26 #27 #29 | main; #36 draft | planning | Azure core provisioning and public deployment; preserve saved-data demo; coordinate #48 with UnusualGelo | Azure RG absent; resolve #48 before final app verification | 2026-11-14 17:07 |
-| dflow11 | #3 #15 #28 | main | idle | CI now runs functions and scripts tests (PR #52); tell UnusualGelo why #48 was undone; then #15 |  | 2026-11-14 17:33 |
+| ompatel | #7 #23 #26 | fix/23-user-assigned-deploy; PR #55 | in review | Verify automatic OIDC deployment after PR #55 merge; Blob ready and Himanshu has access |  | 2026-11-14 18:37 |
+| dflow11 | #15 (#3 #28 open) | PR #54 | in review | Merge the #15 PR once reviewed; tell UnusualGelo why #48 was undone; then #28, #3 |  | 2026-11-14 17:41 |
 | TODO(team) member 3 | | | idle | | | |
 | TODO(team) member 4 | | | idle | | | |
 | TODO(team) member 5 | | | idle | | | |

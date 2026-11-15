@@ -11,7 +11,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 FILES=(env.sh [0-9][0-9]-*.sh check-scripts.sh)
-SCOPED='group|storage|acr|monitor|containerapp|staticwebapp|provider|policy|cosmosdb|role|functionapp|consumption|resource|deployment|afd|network'
+SCOPED='group|storage|acr|monitor|containerapp|staticwebapp|provider|policy|cosmosdb|role|identity|functionapp|consumption|resource|deployment|afd|network'
 TENANT='account|ad|rest|extension|version'
 fail=0
 

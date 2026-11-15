@@ -9,7 +9,7 @@ KEY="SECRET-KEY-DO-NOT-PRINT"
 if [[ $a == *"$KEY"* ]]; then echo "LEAK: $a" >>"$FAKE_LOG.leak"; echo "FAKE AZ: key on command line" >&2; exit 95; fi
 
 case "$1" in
-  group | storage | acr | monitor | containerapp | staticwebapp | provider | policy | cosmosdb | role | functionapp | consumption | deployment)
+  group | storage | acr | monitor | containerapp | staticwebapp | provider | policy | cosmosdb | role | identity | functionapp | consumption | deployment)
     if [[ $a != *" --subscription $SUBID" ]]; then
       printf 'UNPINNED: %s\n' "$a" >>"$FAKE_LOG.unpinned"
       echo "FAKE AZ: unpinned subscription-scoped call: $a" >&2
@@ -99,6 +99,7 @@ case "$a" in
   "monitor app-insights component show -g rg-planetx --app appi-planetx --query workspaceResourceId || WorkspaceResourceId -o tsv")
     echo "${FAKE_AI_WS:-/subscriptions/$SUBID/resourcegroups/rg-planetx/providers/microsoft.operationalinsights/workspaces/log-planetx}" ;;
   "storage account show -g rg-planetx -n stplanetxitu7q4 --query location -o tsv") echo "westus" ;;
+  "storage account show -g rg-planetx -n stplanetxitu7q4 --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.Storage/storageAccounts/stplanetxitu7q4" ;;
   "storage account show -g rg-planetx -n stplanetxitu7q4 --query kind -o tsv") echo "StorageV2" ;;
   "storage account show -g rg-planetx -n stplanetxitu7q4 --query sku.name -o tsv") echo "${FAKE_SA_SKU:-Standard_LRS}" ;;
   "storage account show -g rg-planetx -n stplanetxitu7q4 --query minimumTlsVersion -o tsv") echo "${FAKE_TLS:-TLS1_2}" ;;
@@ -116,11 +117,29 @@ case "$a" in
   "acr show -g rg-planetx -n acrplanetxitu7q4 --query sku.name -o tsv") echo "${FAKE_ACR_SKU:-Standard}" ;;
   "acr show -g rg-planetx -n acrplanetxitu7q4 --query loginServer -o tsv") echo "acrplanetxitu7q4.azurecr.io" ;;
   "acr config authentication-as-arm show -r acrplanetxitu7q4 --query status -o tsv") echo "${FAKE_ARM_AUTH:-enabled}" ;;
+  "acr repository show -n acrplanetxitu7q4 --image "*)
+    [[ ${FAKE_IMAGE:-present} != missing ]] || exit 3
+    echo "${FAKE_DIGEST:-sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ;;
+  "containerapp identity show -g rg-planetx -n ca-planetx-api --query principalId -o tsv") echo 'bbbbbbbb-1111-2222-3333-cccccccccccc' ;;
+  "containerapp show -g rg-planetx -n ca-planetx-api --query properties.configuration.ingress.fqdn -o tsv") echo 'app.test.invalid' ;;
+  "containerapp identity assign "* | "containerapp registry set "* | "containerapp ingress enable "*) exit 0 ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query location -o tsv") echo "West US" ;;
+  "containerapp env show -g rg-planetx -n cae-planetx --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.App/managedEnvironments/cae-planetx" ;;
+  "identity show -g rg-planetx -n id-planetx-api --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.ManagedIdentity/userAssignedIdentities/id-planetx-api" ;;
+  "identity show -g rg-planetx -n id-planetx-api --query clientId -o tsv") echo 'cccccccc-1111-2222-3333-dddddddddddd' ;;
+  "identity show -g rg-planetx -n id-planetx-api --query principalId -o tsv") echo 'dddddddd-1111-2222-3333-eeeeeeeeeeee' ;;
+  "identity show -g rg-planetx -n id-planetx-github --query principalId -o tsv") echo 'eeeeeeee-1111-2222-3333-ffffffffffff' ;;
+  "identity show -g rg-planetx -n id-planetx-github --query clientId -o tsv") echo 'ffffffff-1111-2222-3333-aaaaaaaaaaaa' ;;
+  "identity federated-credential show "*" --query "*)
+    printf '%s\n%s\n%s\n' 'https://token.actions.githubusercontent.com' "${FAKE_CI_SUBJECT:-repo:ompatel181005/IntoTheUnknown:ref:refs/heads/main}" 'api://AzureADTokenExchange' ;;
+  "containerapp show -g rg-planetx -n ca-planetx-api --query id -o tsv") echo "/subscriptions/$SUBID/resourceGroups/rg-planetx/providers/Microsoft.App/containerApps/ca-planetx-api" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.destination -o tsv") echo "log-analytics" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.appLogsConfiguration.logAnalyticsConfiguration.customerId -o tsv") echo "${FAKE_CAE_WS:-cust-id}" ;;
   "containerapp env show -g rg-planetx -n cae-planetx --query properties.defaultDomain -o tsv") echo "nice-sky-1.westus.azurecontainerapps.io" ;;
   "containerapp env create"*) echo 'FAIL: use ARM for workspace key resolution' >&2; exit 93 ;;
+  "deployment group create -g rg-planetx --name core-app "*)
+    [[ $a == *"identityResourceId=/subscriptions/$SUBID/"* && $a == *'containerapp.json'* ]] || exit 91
+    printf '%s\n' "$a" >>"${FAKE_LOG}.deployment"; exit 0 ;;
   "deployment group create"*)
     [[ $a == *"workspaceResourceId=/subscriptions/$SUBID/"* ]] || exit 92
     printf '%s\n' "$a" >>"${FAKE_LOG}.deployment"; exit 0 ;;
