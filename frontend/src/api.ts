@@ -78,11 +78,12 @@ const POINTS_URL = (import.meta.env.VITE_POINTS_URL as string | undefined)
   ?? "https://stplanetxitu7q4.blob.core.windows.net/frames/catalog/points.json";
 
 /** Shared independently of component lifetimes, including StrictMode's first cleanup. */
-export function getCatalog(setName = "points", signal?: AbortSignal): Promise<Catalog> {
-  let pending = catalogLoads.get(setName);
+export function getCatalog(setName = "points", signal?: AbortSignal, preferRemote = true): Promise<Catalog> {
+  const key = `${setName}:${preferRemote}`;
+  let pending = catalogLoads.get(key);
   if (!pending) {
     const urls = setName === "points"
-      ? [POINTS_URL, "/catalog/points.json", "/catalog/targets.json"]
+      ? [...(preferRemote ? [POINTS_URL] : []), "/catalog/points.json", "/catalog/targets.json"]
       : [`/catalog/${encodeURIComponent(setName)}.json`];
     pending = (async () => {
       for (const url of urls) {
@@ -96,7 +97,7 @@ export function getCatalog(setName = "points", signal?: AbortSignal): Promise<Ca
       }
       throw new ApiRequestError("CATALOG", "Could not load the target list. Reload to try again.");
     })();
-    catalogLoads.set(setName, pending);
+    catalogLoads.set(key, pending);
   }
   return pending.then((catalog) => {
     signal?.throwIfAborted();

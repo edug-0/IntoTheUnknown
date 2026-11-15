@@ -5,6 +5,7 @@ import { formatDec, formatParallaxDistance, formatProperMotionMoon, formatRa, mj
 import { isWebUrl } from "../../lib/catalog";
 import type { RaDec } from "../../lib/sky";
 import { PRESETS, type Preset } from "../../lib/targets";
+import { astrometricScatter, sourcePresentation, utcTime } from "../../lib/viewPresentation";
 import type { Panel } from "../../lib/url";
 import type { CatalogObject, GaiaSelection, LightCurve, Spectrum } from "../../types";
 import { AllSkyMap } from "../AllSkyMap/AllSkyMap";
@@ -89,11 +90,12 @@ function where(sel: [number, number] | null) {
 }
 
 function PassTab({ view, index, target, point, position }: DrawerProps) {
-  if (!view || view.manifest.epochs.length === 0) return <Empty>Pick a target to see pass details.</Empty>;
+  if (!view) return <Empty>Load a view to see pass details.</Empty>;
+  if (view.manifest.epochs.length === 0) return <Empty>This selection produced no usable passes.</Empty>;
   const m = view.manifest;
   const e = m.epochs[index] ?? m.epochs[0];
   const flagged = Object.entries(e.flagged_px);
-  const flaggedTotal = flagged.reduce((a, [, n]) => a + n, 0);
+  const provenance = sourcePresentation(view);
   return (
     <>
       <section className={s.section} aria-labelledby="d-target">
@@ -188,38 +190,30 @@ function PassTab({ view, index, target, point, position }: DrawerProps) {
             Gaia DR3; <Term term="(lit.)">(lit.)</Term> marks literature values.
           </p>
         )}
+        <p className={s.sourceBadge}>{provenance.label} · {provenance.cache}</p>
       </section>
       <section className={s.section} aria-labelledby="d-epoch">
         <h3 id="d-epoch" className={`micro ${s.sectionTitle}`}>
           This pass
         </h3>
+        {m.epochs.length === 1 && <p className={s.note}>One pass. Motion needs at least two passes.</p>}
         <div className={s.grid}>
           <div className={`${s.tile} ${s.tileFull}`}>
             <span className={s.tileLabel}>Pass {String(e.i + 1).padStart(2, "0")} / {String(m.epochs.length).padStart(2, "0")}</span>
             <span className={`${s.tileValue} mono`}>{mjdToDate(e.t_mean_mjd)}</span>
           </div>
           <Tile label="Frames" value={`${e.n_frames} frames`} mono />
+          <Tile label="Start (UTC)" value={utcTime(e.t_start)} mono />
+          <Tile label="End (UTC)" value={utcTime(e.t_end)} mono />
           <Tile label={<Term term="Detectors">Detectors</Term>} value={e.detectors.map((d) => `D${d}`).join(" ")} mono />
           <Tile label="Wavelength" value={`λ ${e.lambda_um[0].toFixed(2)}-${e.lambda_um[1].toFixed(2)} µm`} mono />
-          <Tile label={<Term term="Release">Release</Term>} value={m.catalog.collections.join(" + ")} mono />
-          <div className={s.maskedTile}>
-            <div className={s.maskedHead}>
-              <span className={s.tileLabel}><Term term="Masked pixels">Masked pixels</Term></span>
-              <span className={`${s.tileValue} mono`}>
-                <span className={flaggedTotal ? s.flagCount : undefined}>{flaggedTotal}</span>
-                {" "}
-                <span className={s.perFrame}>per frame</span>
-              </span>
-            </div>
-            {flagged.length > 0 && (
-              <div className={s.flagChips}>
-                {flagged.map(([k, n]) => (
-                  <span key={k} className={s.flagChip}>
-                    <Term term={k}>{k}</Term> <span className={`mono ${s.chipCount}`}>{n}</span>
-                  </span>
-                ))}
-              </div>
-            )}
+          <Tile label={<Term term="Release">Collections</Term>} value={m.catalog.collections.join(" + ") || "Not reported"} mono />
+          <Tile label="Alignment scatter" value={astrometricScatter(e.astrom_resid_px)} full />
+          <div className={s.tile}>
+            <span className={s.tileLabel}>Input flag counts</span>
+            <span className={`${s.tileValue} mono`}>
+              {flagged.length > 0 ? <span className={s.flagList}>{flagged.map(([k, n]) => <span key={k}><Term term={k}>{k}</Term> {n}{" "}</span>)}</span> : "None reported"}
+            </span>
           </div>
           {m.bandpass_matched === false && (
             <Tile
@@ -230,6 +224,8 @@ function PassTab({ view, index, target, point, position }: DrawerProps) {
             />
           )}
         </div>
+        <p className={s.note}>Alignment scatter is the per-axis centroid scatter of reference stars, not a target-position uncertainty. “Not measured” means no usable alignment measurement was reported.</p>
+        <p className={s.note}>Flag counts are rounded mean flagged pixels per input frame. Categories overlap; they are not object counts or a distinct-pixel total.</p>
       </section>
     </>
   );

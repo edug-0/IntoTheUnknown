@@ -5,7 +5,8 @@ import { flightIsActive, getFlightDirection, getFlightStartPose, markFlight, reg
 import { formatDec, formatRa } from "../../lib/format";
 import { ARROW_GAIN, gaiaMarks } from "../../lib/gaia";
 import { renderDifference, renderEpoch, tokenRgb } from "../../lib/stretch";
-import { type Preset } from "../../lib/targets";
+import type { Preset } from "../../lib/targets";
+import { differenceLabel, savedPresetLink, savedRecovery, sourcePresentation, viewErrorCopy } from "../../lib/viewPresentation";
 import type { Overlays, StretchKind, ViewMode } from "../../lib/url";
 import type { CatalogObject, FovArcmin, GaiaResult } from "../../types";
 import { Orrery } from "../Orrery/Orrery";
@@ -61,7 +62,7 @@ export function SkyStage(props: SkyStageProps) {
         <Home visibleIds={props.visibleIds ?? null} active={home} targets={props.catalogObjects} onPick={props.onOpenFromHome} onFlightStart={props.onFlightStart} onFlightEnd={props.onFlightEnd} onTour={props.onTour} flying={props.flying} onFullscreen={props.onFullscreen} />
       </div>
       <section className={s.stage} aria-label="Sky view" data-preparing={home} aria-hidden={home} inert={home}>
-        {load.kind === "error" && <ErrorCard message={load.message} onRetry={props.onRetry} />}
+        {load.kind === "error" && <ErrorCard code={load.code} recovery={savedRecovery(props.ra, props.dec)} message={load.message} onRetry={props.onRetry} />}
         {empty && <NoCoverage onRetry={props.onRetry} />}
         {(home || load.kind === "loading" || (load.kind === "ready" && !empty)) && (
           <Eyepiece {...props} view={load.kind === "ready" ? load.view : null}>
@@ -335,7 +336,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
               </Term>
             </span>
           ) : m && m.epochs.length === 1 ? (
-            <span>One pass; nothing to compare</span>
+            <span>One pass</span>
           ) : (
             <span className={s.hintText}>Click to measure</span>
           )}
@@ -399,6 +400,8 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           )}
         </div>
         <div className={s.bottomRow}>
+          {view && props.showLabel && <span className={s.sourceBadge} title={sourcePresentation(view).note}>{sourcePresentation(view).label} · {sourcePresentation(view).cache}</span>}
+          {m?.epochs.length === 1 && props.showLabel && <p className={s.singlePass} role="status">One pass. Motion needs at least two passes.</p>}
           {!showLabel && (!outer || outer.raLabels.length === 0) && ra !== null && dec !== null && (
             <span className={`${s.positionReadout} mono`}>RA {formatRa(ra)} <span>DEC {formatDec(dec)}</span></span>
           )}
@@ -416,7 +419,7 @@ function Eyepiece(props: SkyStageProps & { view: LoadedView | null; children?: R
           dec={dec}
           sub={props.target?.watch ?? props.point?.kind.replaceAll("_", " ") ?? null}
           fixture={view?.label ?? null}
-          provenance={view?.manifest.origin ? `SPHEREx Level 2 · ${view.manifest.origin.kind === "saved" ? "Saved cutouts" : "Live archive"} · North up · East left` : null}
+          provenance={view ? `${sourcePresentation(view).label} · North up · East left` : null}
         />
       )}
     </div>
@@ -540,13 +543,22 @@ function Loading({ load }: { load: Extract<LoadState, { kind: "loading" }> }) {
   );
 }
 
-function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ErrorCard({ code, message, recovery, onRetry }: { code: string; message: string; recovery?: Preset; onRetry: () => void }) {
+  const copy = viewErrorCopy(code);
+  const offerSaved = recovery && (code === "IRSA_DOWN" || code === "QUEUE_FULL" || code === "HTTP_429" || code === "NOT_SAVED");
   return (
     <GlassPanel strong className={s.card} role="alert">
+      <h2>{copy.title}</h2>
       <p>{message}</p>
+      <p>{copy.advice}</p>
       <GlassButton icon="retry" onClick={onRetry}>
         Retry
       </GlassButton>
+      {offerSaved && <div className={s.recovery}>
+        <a href={savedPresetLink(recovery)}>Open saved default: {recovery.name}</a>
+        <p>This opens the bundled {recovery.fov}′ / {recovery.band} view at its default position, resets the pass and selection, and uses Saved data.</p>
+      </div>}
+      {!offerSaved && <a className={s.savedExamples} href="/learn.html">Explore saved examples</a>}
     </GlassPanel>
   );
 }
@@ -554,7 +566,8 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
 function NoCoverage({ onRetry }: { onRetry: () => void }) {
   return (
     <GlassPanel strong className={s.card} role="status">
-      <p>No SPHEREx passes here yet. Try another position or check again later.</p>
+      <h2>No usable passes for this view</h2>
+      <p>This selection produced no usable passes. Try another band, field of view or position. This does not establish that the archive has no observations here.</p>
       <GlassButton icon="retry" onClick={onRetry}>
         Check again
       </GlassButton>
@@ -622,7 +635,7 @@ function FrameCanvas({ view, index, mode, stretch, invert, smooth, gain, refInde
       width={nx * k}
       height={ny * k}
       role="img"
-      aria-label={`SPHEREx image, epoch ${e.i + 1} of ${m.epochs.length}, ${e.label}${mode === "diff" ? `, difference from pass ${Math.min(refIndex, m.epochs.length - 1) + 1}` : ""}`}
+      aria-label={`SPHEREx image, epoch ${e.i + 1} of ${m.epochs.length}, ${e.label}${differenceLabel(mode, images.length, index, refIndex)}`}
     />
   );
 }
