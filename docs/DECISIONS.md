@@ -194,3 +194,45 @@ Owner: dflow11
 Decision: Himanshu's two-level Blob cache (`backend/app/cache/blob.py`) is the render cache whenever `STORAGE_ACCOUNT_URL` is set: renders go to `frames/r/<rk>/`, pointers to `frames/q/<qk>.json`, and `manifest_url` is the public Blob URL, so the browser loads arrays from Blob. Unset, it is the local folder served at `/frames`, as before. Added while bringing the branch up to date: `gaia.json` is stored with the render and `/api/views/{id}/gaia` reads the render back through the cache (`read`); the Blob client retries once with 5 s connect and 20 s read timeouts; a failed Blob write keeps that view on local disk instead of failing it; every build renders, and only the upload is skipped when the render already exists.
 Why: The container's disk is wiped on every deploy, so each custom position was rebuilt from the archive after every merge to main. Main gained the alignment check and the Gaia overlay after the branch was cut, and both wrote to or read from the local folder. Not tested against the real storage account before merging (no Azure CLI on the merging machine): the tests use a fake container, and the first real check is the deployed app.
 Owner: Himanshu-1804 (cache), dflow11 (merge onto main)
+
+
+## 2026-11-15: watcher activation uses MI storage and Flex OneDeploy (#7)
+
+The activation template reuses project storage/Insights, adds a dedicated watcher
+user identity and private host/package containers, and limits Flex to Python3.11,
+2048MB/max2/no always-ready. Host Blob Data Owner is scoped to precreated host
+containers; state/frames/package receive Blob Data Contributor. Container-scoped
+host startup remains a live verification gate. A dedicated main-only code workflow
+receives Website Contributor only on the Function app through the existing OIDC
+identity, plus Reader on the watcher plan because Azure CLI
+[reads its SKU before deploying](https://github.com/Azure/azure-cli/blob/azure-cli-2.92.0/src/azure-cli/azure/cli/command_modules/appservice/custom.py#L733-L760).
+No subscription/RG role or storage shared key is added.
+
+Current official migration guidance allows maximumInstanceCount 1-1000, although
+an older ARM quickstart still has minimum40. The provider accepted 1, but protected
+calls returned platform503; at 2 the handler executed and reported IRSA_DOWN.
+Keep max2 with zero always-ready instances. This is an operational observation,
+not a load test. Official Flex guidance explicitly supports config-zip remote builds
+through OneDeploy without local Core Tools. References, exact commands and live
+gates are in [WATCHER-ACTIVATION.md](../infra/WATCHER-ACTIVATION.md).
+
+The shared refresh secret is generated/recovered only in memory and passed as a
+secure ARM parameter/CAsecretRef/Function setting. Full manual API deployment
+preserves it; unwired bootstrap initializes safely, while withheld/dangling keys
+or cross-app disagreement fail closed. A refresh202 is accepted work, not proof
+of completed frames; the existing watcher targets metadata plus five pinned Live
+views, not all47 catalog renders. The host is provisioned and both functions are
+indexed. Authentication rejection checks pass; a successful metadata refresh is
+still pending upstream IRSA availability.
+Owner: ompatel181005 (Codex)
+
+## 2026-11-15: readable files in the Functions deployment ZIP (#7)
+
+The first package built and uploaded but logged "Zip permission validation failed"
+and could not index its functions. CPython's string-name `ZipFile.writestr`
+[defaults to 0600](https://github.com/python/cpython/blob/3.11/Lib/zipfile.py#L1716-L1735).
+Package runtime files explicitly as Unix regular files with mode0644. After this
+fix OneDeploy succeeded and both functions indexed. No storage role was widened.
+The regression test inspects the actual ZIP entries. Remote Linux build remains
+enabled; only committed runtime files are packaged.
+Owner: ompatel181005 (Codex)
