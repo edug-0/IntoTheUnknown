@@ -6,8 +6,8 @@ The production Dockerfile builds React and runs FastAPI on port 8000. The defaul
 
 | Resource | Purpose | Integration |
 |---|---|---|
-| ACR + Container Apps environment + app | Build and host the combined app | Registry/environment created; ACR Tasks denied; GitHub build fallback prepared |
-| System-assigned identity | Pull private images with registry-scoped AcrPull | Configured by `30-app.sh`; no registry password |
+| ACR + Container Apps environment + app | Build and host the combined app | Live app verified; ACR Tasks denied, GitHub build succeeded |
+| User-assigned identity | Registry pulls and runtime Blob access | `id-planetx-api`; scoped AcrPull and Blob Data Contributor; runtime Blob test passed |
 | Log Analytics | Container platform logs | Workspace created and linked to the environment |
 | Application Insights | Future application telemetry | Resource created; Python instrumentation pending |
 | Blob Storage | Persistent render cache and watcher state | Live account and containers verified; backend integration belongs to #12 |
@@ -44,7 +44,7 @@ SOURCE_REF=origin/main bash infra/30-app.sh --apply
 
 The recorded 2026-11-14 preflight allowed westus, northcentralus, norwayeast, belgiumcentral and francecentral. Container Apps and Functions Flex were available; no SWA region overlapped. Rerun before creation. Core verifies region policy at subscription and resource-group scopes and checks existing locations, SKUs, TLS, HTTPS, CORS and workspace links. An unreadable policy blocks creation unless a human explicitly sets `ALLOW_UNVERIFIED_REGION=1` after checking it.
 
-`30-app.sh --apply` checks core resources and ACR ARM-token authentication, archives a resolved Git commit, and submits tracked files to ACR. `.dockerignore` additionally permits only Dockerfile/backend/frontend/demo inputs and excludes private or generated files inside them. The archive is removed; the extracted local context remains for inspection. Image tags use the source commit. The app is bootstrapped without public ingress, assigned AcrPull only on the registry, switched to the private image, then exposed on port 8000. This follows [Microsoft's managed-identity image-pull flow](https://learn.microsoft.com/en-us/azure/container-apps/managed-identity-image-pull). RBAC propagation can delay pulls; rerunning the same commit is safe.
+`30-app.sh --apply` checks core resources and ACR ARM-token authentication, archives a resolved Git commit, and submits tracked files to ACR. `.dockerignore` additionally permits only Dockerfile/backend/frontend/demo inputs and excludes private or generated files inside them. The archive is removed; the extracted local context remains for inspection. Image tags use the source commit. The app uses `id-planetx-api`, a dedicated user-assigned identity with AcrPull only on this registry and Blob Data Contributor only on this storage account. The explicit environment, identity, registry, storage variables and HTTPS ingress are deployed through `containerapp.json`. This follows [Microsoft's managed-identity image-pull flow](https://learn.microsoft.com/en-us/azure/container-apps/managed-identity-image-pull). RBAC propagation can delay pulls; rerunning the same commit is safe.
 
 After deployment, check revision readiness, `/api/health`, all five presets and spectrum/brightness at the public URL. HTTP 200 health does not establish that IRSA is up or science is validated. Save the source SHA and verification results without secrets. Return minimum replicas to zero after judging; cold starts are expected.
 
@@ -66,6 +66,14 @@ The first live `az acr build` failed with `TasksOperationsNotAllowed`. No app re
 
 Just before dispatch, an authorized operator obtains a short-lived registry token using `az acr login --expose-token` and passes it **directly through stdin** to `gh secret set ACR_BUILD_TOKEN`. Never print the token, put it in a body/argument/file, or use the ACR admin password. Remove the GitHub secret after the run, including a failed run. Tokens expire after about three hours; this is a manual bootstrap route, not unattended CI authentication. [Microsoft's token login documentation](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-authentication#use-az-acr-login-without-docker-daemon).
 
-After a successful workflow, `SOURCE_REF=<same-full-sha> bash infra/30-app.sh --deploy-only` checks the existing image digest and deploys with the original managed-identity flow, without requesting another ACR build. The workflow must be merged before its manual dispatch is available. OIDC remains a separate automation improvement.
+After a successful workflow, `SOURCE_REF=<same-full-sha> bash infra/30-app.sh --deploy-only` checks the existing image digest and deploys with the declared user-assigned identity, without requesting another ACR build. The workflow must be merged before its manual dispatch is available. OIDC remains a separate automation improvement.
+
+## Verified public deployment
+
+Live URL: https://ca-planetx-api.politesand-6f83d8b5.westus.azurecontainerapps.io
+
+Image source: `130e42b9138545ec9a856136ad41e5d1aa19df50`. The [GitHub build](https://github.com/ompatel181005/IntoTheUnknown/actions/runs/43654638715) succeeded and its temporary ACR secret was deleted. Health returned HTTP 200. Public Chrome checks passed for all five saved presets with every API request denied; normal API checks returned 37 Barnard spectrum points and 115 light-curve points. No browser errors or external browser requests occurred. [Recorded browser results](live-checks.json). These checks do not add science validation for the other targets.
+
+CLI PATCH updates failed with `ExpressSystemAssignedIdentityNotSupported` despite the app referencing the standard Consumption environment. A full ARM create/update with a dedicated user-assigned identity succeeded. Runtime identity access to private Blob state was tested inside the deployed container. `30-app.sh` now uses this reproducible ARM/UserAssigned path. Keep maximum replicas at one until shared job state is implemented.
 
 `check-scripts.sh` checks syntax, subscription/ARM URL scoping and workspace-key avoidance. `tests/run.sh` uses fake Azure/GitHub commands and fixture identities only, checking wrong-subscription/tenant refusal, policy, configuration, OIDC and budget behavior. Exit codes: 0 success, 1 error, 2 OIDC permission denial, 3 budget refusal, 4 unconfirmed policy.

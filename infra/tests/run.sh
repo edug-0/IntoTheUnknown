@@ -117,7 +117,9 @@ has 'invalid image digest' output
 lacks '^acr build|^containerapp update' calls
 run_case 'deploy-only updates existing app with managed identity and verifies health' 0 30-app.sh APP_MODE=--deploy-only FAKE_EXISTS=yes
 lacks '^acr build|^containerapp create' calls
-has '^containerapp registry set .*--identity system' calls
-has '^containerapp ingress enable .*--target-port 8000' calls
+has '^deployment group create .*--name core-app .*identityResourceId=/subscriptions/' calls
+has '^role assignment create .*--role AcrPull --scope /subscriptions/.*/registries/' calls
+has '^role assignment create .*--role Storage Blob Data Contributor --scope /subscriptions/.*/storageAccounts/' calls
+lacks '^containerapp identity assign .*--system-assigned' calls
 has 'https://app.test.invalid/api/health' calls.curl
 printf '\n%s offline scenarios passed; no Azure or GitHub requests made.\n' "$passed"

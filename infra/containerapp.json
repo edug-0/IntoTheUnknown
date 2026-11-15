@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "appName": {"type": "string"},
+    "location": {"type": "string"},
+    "environmentId": {"type": "string"},
+    "identityResourceId": {"type": "string"},
+    "identityClientId": {"type": "string"},
+    "image": {"type": "string"},
+    "registryServer": {"type": "string"},
+    "storageAccountUrl": {"type": "string"},
+    "framesContainer": {"type": "string", "defaultValue": "frames"},
+    "stateContainer": {"type": "string", "defaultValue": "state"}
+  },
+  "resources": [{
+    "type": "Microsoft.App/containerApps",
+    "apiVersion": "2024-03-01",
+    "name": "[parameters('appName')]",
+    "location": "[parameters('location')]",
+    "identity": {
+      "type": "UserAssigned",
+      "userAssignedIdentities": {"[parameters('identityResourceId')]": {}}
+    },
+    "properties": {
+      "environmentId": "[parameters('environmentId')]",
+      "managedEnvironmentId": "[parameters('environmentId')]",
+      "workloadProfileName": "Consumption",
+      "configuration": {
+        "activeRevisionsMode": "Single",
+        "registries": [{"server": "[parameters('registryServer')]", "identity": "[parameters('identityResourceId')]"}],
+        "ingress": {"external": true, "targetPort": 8000, "transport": "auto", "allowInsecure": false}
+      },
+      "template": {
+        "containers": [{
+          "name": "[parameters('appName')]",
+          "image": "[parameters('image')]",
+          "resources": {"cpu": 1.0, "memory": "2Gi"},
+          "env": [
+            {"name": "AZURE_CLIENT_ID", "value": "[parameters('identityClientId')]"},
+            {"name": "STORAGE_ACCOUNT_URL", "value": "[parameters('storageAccountUrl')]"},
+            {"name": "FRAMES_CONTAINER", "value": "[parameters('framesContainer')]"},
+            {"name": "STATE_CONTAINER", "value": "[parameters('stateContainer')]"},
+            {"name": "FRAMES_PUBLIC_BASE", "value": "[concat(parameters('storageAccountUrl'), '/', parameters('framesContainer'))]"}
+          ]
+        }],
+        "scale": {"minReplicas": 0, "maxReplicas": 1}
+      }
+    }
+  }]
+}
