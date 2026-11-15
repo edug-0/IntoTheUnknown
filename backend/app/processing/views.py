@@ -174,7 +174,7 @@ def archive_rows(req: ViewRequest, max_age_s: float | None = None, allow_stale: 
             rows = [{k: v for k, v in r.items() if k != "_rank"} for r in _query_irsa(req)]
         except Exception as e:  # both SIA and TAP failed
             _irsa["failed_at"] = time.monotonic()
-            log.warning("IRSA query failed: %s", e)
+            log.warning("IRSA metadata fallback exhausted: %s", type(e).__name__)
         else:
             _irsa["failed_at"] = None
             put = getattr(cache, "put_rows", None)
