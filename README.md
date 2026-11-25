@@ -2,7 +2,7 @@
 
 > Team project built for NASA Space Apps 2026 (Planet X and SPHEREx challenge) with team LOGICA: [Om Patel](https://github.com/ompatel181005), [Diego](https://github.com/dflow11), Himanshu, [Ammar](https://github.com/ab1kenobi) and Angelo. Original repo: [ompatel181005/IntoTheUnknown](https://github.com/ompatel181005/IntoTheUnknown).
 >
-> My role: frontend, UI and UX lead.
+> I lead with the frontend, UI and UX.
 
 ![Barnard's Star in the sky view, with the planetarium dome, Customize panel and playback dock](docs/readme/sky-view-barnard.png)
 
@@ -12,23 +12,24 @@
 
 SPHEREx is a NASA infrared telescope that maps the whole sky every six months. The data is public, but it comes as FITS files you have to query from Python. Into The Unknown takes any spot on the sky and plays the SPHEREx images of it as a short flipbook, so you can see what moved.
 
-- Blink flips between two passes, the way Clyde Tombaugh found Pluto.
+- Blink flips try to flip between several passes, to recreate the same way Clyde Tombaugh found Pluto.
 - Difference subtracts one pass from another, so a moving star shows up as a dark and bright pair.
-- The home screen lists 47 prepared fields, five of them the challenge targets. Barnard's Star and epsilon Indi B pass our astrometry checks against Gaia predictions (see `validation.md`).
 
-It's for students, teachers, citizen scientists, and astronomers who want a quick look before downloading anything.
+We built this interface for students, teachers, citizen scientists, and astronomers who want a quick look before downloading anything.
+
+We tried our best to make the interface ui reflect that, and make playing around with the platform as enjoyable as possible. 
 
 ![Home screen: the orrery with Earth and SPHEREx, and the list of 47 targets](docs/readme/home-orrery.png)
 
 ## My contributions
 
-I built the React and TypeScript frontend in `frontend/`. That's 21 commits on Nov 14 and 15, including PRs #65, #76, #91 and #109.
+I built the React and TypeScript frontend. Several features of the interface we're parts we knew we wanted and I spent alot of the time sharpening where we wanted the platform to go. Some notable aspects include:
 
-- The sky view in React: an all-sky map, then a planetarium dome with a real RA/Dec grid and compass, building on [Ammar's](https://github.com/ab1kenobi) dome prototype.
-- The home orrery, with moving planets drawn as shaded spheres and a camera that glides in on first load.
-- The guided tour, guide dialog, Customize panel, and a measurement drawer (spectrum and light curve at a clicked pixel).
+- The sky view which was all in React. It was an all-sky map, then a planetarium dome with a real RA/Dec grid and compass.
+- The home orrery, where moving planets were drawn as shaded spheres and a camera that glides in.
+- The guided tour, guide dialog, Customize panel, and a measurement drawer.
 - The home point list, which loads pre-built views from Azure Blob.
-- The hookup to the backend: I connected the views API to the frontend (`a9dd17c`) and fixed a dev proxy that returned 502s.
+- The hookup to the backend was where I connected the views API to the frontend.
 - Reduced-motion fallbacks.
 
 Om built the Azure deployment and the IRSA handling. Diego built the Gaia overlay and the refresh endpoint, and [UnusualGelo](https://github.com/UnusualGelo) built the Gaia data endpoint. Himanshu built the two-level Blob render cache.
@@ -52,17 +53,15 @@ Difference mode on Barnard's Star, last pass against the first:
 
 ![Difference mode on Barnard's Star](docs/readme/difference-mode.png)
 
-Full design: see [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md).
+For the Full design take a look at [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md).
 
 ## Challenges and what I learned
 
-On Nov 15 the sky view worked but the dome jumped a few pixels at the end of every flight. Two layout changes happened after the flight destination was locked: the mobile date wrapping made the playback row taller, and the home projection picked up a shifting top margin. I made both stable. In my recorded runs, 24 of 48 flights popped before and 0 of 132 after (numbers from my #91 commit message).
+The sky view worked but the dome jumped a few pixels at the end of every flight and overall having the interface flow smoothly was a struggle. Two layout changes happened after the flight destination was locked which eventually made the motion that much more expensive to draw. To fix the stutters, I cleaned up what was shown during the motion to ensure that what was shown was as high fps as I could achieve.
 
 The reduced-motion bug was a smaller mistake. With "Animation effects" off in Windows, Firefox and Chrome report reduced motion, and my code skipped every transition in that mode, so some elements stayed hidden. I switched to zeroing the delays and fading the playback dock in.
 
-What I learned: measure a flight's destination only after the layout has stopped changing. Anything that resizes the dome after you've locked the target shows up as a jump.
-
-It's still rough on phones. The mode row hides Investigate and the date label wraps (issue #86, open).
+It's still rough on phones and that was a part of the project that we didn't have time to sharpen out, so the preferred and more carried out page is on desktops.
 
 ## Demo
 
