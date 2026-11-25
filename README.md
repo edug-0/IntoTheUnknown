@@ -36,9 +36,9 @@ Om built the Azure deployment and the IRSA handling. Diego built the Gaia overla
 
 ## How it works
 
-The browser never talks to NASA. For a new target, the React app asks a FastAPI backend to build a view: it finds the exposures, pulls cutouts, stacks one image per survey pass, aligns them to Gaia stars, and caches the result in Azure Blob. The browser reads the arrays from Blob and does blink and difference on a canvas.
+We planned for hundreds of targets to eventually be usable, so for any new target, the React app asks a FastAPI backend to build a view. It then finds the exposures, pulls cutouts, stacks one image per survey pass, aligns them to Gaia stars, and caches the result in Azure Blob. The browser reads the arrays from Blob and does blink and difference on a canvas.
 
-We cache in Blob because a live build is slow. A two-hour Azure diagnostic measured a median pipeline build of 6.49 minutes, too slow to demo. So the home list loads views we pre-rendered, and the five presets also ship as saved snapshots that work with the API down.
+We cache in Blob because a live build is slow. So the home list loads views we pre-rendered, and the five presets also ship as saved snapshots that work even with the API down (which it was. alot.).
 
 ```mermaid
 flowchart LR
