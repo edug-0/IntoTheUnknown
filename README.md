@@ -70,5 +70,3 @@ It's still rough on phones and that was a part of the project that we didn't hav
     <img src="https://img.youtube.com/vi/IDu2bgsKo7A/maxresdefault.jpg" alt="Into The Unknown demo video" width="800">
   </a>
 </p>
-
-<p align="center"><i>A 4-minute walkthrough of the app with voiceover. Click to watch on YouTube.</i></p>
