@@ -65,4 +65,4 @@ It's still rough on phones and that was a part of the project that we didn't hav
 
 ## Demo
 
-[![Into The Unknown demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=IDu2bgsKo7A)
+[![Into The Unknown demo](https://img.youtube.com/vi/IDu2bgsKo7A/hqdefault.jpg)](https://www.youtube.com/watch?v=IDu2bgsKo7A)
